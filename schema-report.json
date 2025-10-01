@@ -1,0 +1,344 @@
+{
+  "schemaReport": [
+    {
+      "property": "amiibo",
+      "count": 1,
+      "distinctValues": 1,
+      "dataTypes": [
+        {
+          "type": "array",
+          "count": 1,
+          "example": "[array]"
+        }
+      ]
+    },
+    {
+      "property": "amiibo.amiiboSeries",
+      "count": 889,
+      "distinctValues": 29,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "Animal Crossing",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 889
+            }
+          ],
+          "minValues": {
+            "string": "8-bit Mario"
+          },
+          "maxValues": {
+            "string": "Yu-Gi-Oh!"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.character",
+      "count": 889,
+      "distinctValues": 646,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "Sandy",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 889
+            }
+          ],
+          "minValues": {
+            "string": "A.K.I"
+          },
+          "maxValues": {
+            "string": "Étoile"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.gameSeries",
+      "count": 889,
+      "distinctValues": 46,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "Animal Crossing",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 889
+            }
+          ],
+          "minValues": {
+            "string": "ARMS"
+          },
+          "maxValues": {
+            "string": "Yu-Gi-Oh!"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.head",
+      "count": 889,
+      "distinctValues": 817,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "04380001",
+          "inferredTypes": [
+            {
+              "type": "integer",
+              "count": 385
+            },
+            {
+              "type": "string",
+              "count": 504
+            }
+          ],
+          "minValues": {
+            "integer": "00000000",
+            "string": "0005ff00"
+          },
+          "maxValues": {
+            "integer": "38460001",
+            "string": "3f000000"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.image",
+      "count": 889,
+      "distinctValues": 889,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "https://raw.githubusercontent.com/N3evin/AmiiboAPI/master/images/icon_04380001-03000502.png",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 889
+            }
+          ],
+          "minValues": {
+            "string": "https://raw.githubusercontent.com/N3evin/AmiiboAPI/master/images/icon_00000000-00000002.png"
+          },
+          "maxValues": {
+            "string": "https://raw.githubusercontent.com/N3evin/AmiiboAPI/master/images/icon_3f000000-042e0002.png"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.name",
+      "count": 889,
+      "distinctValues": 834,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "Sandy",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 889
+            }
+          ],
+          "minValues": {
+            "string": "8-Bit Link"
+          },
+          "maxValues": {
+            "string": "Étoile"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.release",
+      "count": 889,
+      "distinctValues": 112,
+      "dataTypes": [
+        {
+          "type": "object",
+          "count": 889,
+          "example": "{object}"
+        }
+      ]
+    },
+    {
+      "property": "amiibo.release.au",
+      "count": 889,
+      "distinctValues": 75,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 840,
+          "example": "2016-11-10",
+          "inferredTypes": [
+            {
+              "type": "date",
+              "count": 840
+            }
+          ],
+          "minValues": {
+            "date": "2014-11-29"
+          },
+          "maxValues": {
+            "date": "2025-07-17"
+          }
+        },
+        {
+          "type": "null",
+          "count": 49
+        }
+      ]
+    },
+    {
+      "property": "amiibo.release.eu",
+      "count": 889,
+      "distinctValues": 74,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 749,
+          "example": "2016-11-11",
+          "inferredTypes": [
+            {
+              "type": "date",
+              "count": 749
+            }
+          ],
+          "minValues": {
+            "date": "2014-11-28"
+          },
+          "maxValues": {
+            "date": "2025-07-17"
+          }
+        },
+        {
+          "type": "null",
+          "count": 140
+        }
+      ]
+    },
+    {
+      "property": "amiibo.release.jp",
+      "count": 889,
+      "distinctValues": 83,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 871,
+          "example": "2016-11-03",
+          "inferredTypes": [
+            {
+              "type": "date",
+              "count": 871
+            }
+          ],
+          "minValues": {
+            "date": "2014-12-06"
+          },
+          "maxValues": {
+            "date": "2025-08-26"
+          }
+        },
+        {
+          "type": "null",
+          "count": 18
+        }
+      ]
+    },
+    {
+      "property": "amiibo.release.na",
+      "count": 889,
+      "distinctValues": 80,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 855,
+          "example": "2016-12-02",
+          "inferredTypes": [
+            {
+              "type": "date",
+              "count": 855
+            }
+          ],
+          "minValues": {
+            "date": "2014-11-21"
+          },
+          "maxValues": {
+            "date": "2025-07-17"
+          }
+        },
+        {
+          "type": "null",
+          "count": 34
+        }
+      ]
+    },
+    {
+      "property": "amiibo.tail",
+      "count": 889,
+      "distinctValues": 889,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "03000502",
+          "inferredTypes": [
+            {
+              "type": "integer",
+              "count": 317
+            },
+            {
+              "type": "string",
+              "count": 572
+            }
+          ],
+          "minValues": {
+            "integer": "00000002",
+            "string": "000a0002"
+          },
+          "maxValues": {
+            "integer": "04390402",
+            "string": "04c01d02"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.type",
+      "count": 889,
+      "distinctValues": 5,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 889,
+          "example": "Card",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 889
+            }
+          ],
+          "minValues": {
+            "string": "Band"
+          },
+          "maxValues": {
+            "string": "Yarn"
+          }
+        }
+      ]
+    }
+  ]
+}

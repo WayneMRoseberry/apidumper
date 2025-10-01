@@ -1,0 +1,16 @@
+{
+  "schemaReport": [
+    {
+      "property": "amiibo",
+      "count": 1,
+      "distinctValues": 1,
+      "dataTypes": [
+        {
+          "type": "array",
+          "count": 1,
+          "example": "[array]"
+        }
+      ]
+    }
+  ]
+}
