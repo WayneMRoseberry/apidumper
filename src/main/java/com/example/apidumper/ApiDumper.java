@@ -195,11 +195,16 @@ public class ApiDumper {
     }
     
     private static void generateSchemaReport(String jsonResponse, String dumpDistinctValues, String reportFile) {
+        String schemaReportJson = generateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        outputSchemaReport(schemaReportJson, reportFile);
+    }
+    
+    private static String generateSchemaReportJson(String jsonResponse, String dumpDistinctValues) {
         try {
             // Check if response is empty or null
             if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
                 System.err.println("Error: Response body is empty. Cannot generate schema report.");
-                return;
+                return null;
             }
             
             JsonElement element = JsonParser.parseString(jsonResponse);
@@ -280,26 +285,7 @@ public class ApiDumper {
             
             // Output as formatted JSON
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            String jsonOutput = gson.toJson(reportMap);
-            
-            if (reportFile != null && !reportFile.trim().isEmpty()) {
-                // Write to file
-                try (PrintWriter writer = new PrintWriter(new FileWriter(reportFile))) {
-                    writer.println(jsonOutput);
-                    System.out.println("Schema report written to: " + reportFile);
-                } catch (IOException e) {
-                    System.err.println("Error writing schema report to file: " + e.getMessage());
-                    // Fall back to console output
-                    System.out.println();
-                    System.out.println("Schema Report:");
-                    System.out.println(jsonOutput);
-                }
-            } else {
-                // Output to console
-                System.out.println();
-                System.out.println("Schema Report:");
-                System.out.println(jsonOutput);
-            }
+            return gson.toJson(reportMap);
             
         } catch (JsonSyntaxException e) {
             System.err.println("Error parsing JSON for schema report: " + e.getMessage());
@@ -313,9 +299,36 @@ public class ApiDumper {
             System.err.println("  - The API returned plain text");
             System.err.println("  - The response is malformed JSON");
             System.err.println("\nTip: Use --noDataDump to suppress response body and see only this error.");
+            return null;
         } catch (Exception e) {
             System.err.println("Error generating schema report: " + e.getMessage());
             e.printStackTrace();
+            return null;
+        }
+    }
+    
+    private static void outputSchemaReport(String schemaReportJson, String reportFile) {
+        if (schemaReportJson == null) {
+            return; // Error already handled in generateSchemaReportJson
+        }
+        
+        if (reportFile != null && !reportFile.trim().isEmpty()) {
+            // Write to file
+            try (PrintWriter writer = new PrintWriter(new FileWriter(reportFile))) {
+                writer.println(schemaReportJson);
+                System.out.println("Schema report written to: " + reportFile);
+            } catch (IOException e) {
+                System.err.println("Error writing schema report to file: " + e.getMessage());
+                // Fall back to console output
+                System.out.println();
+                System.out.println("Schema Report:");
+                System.out.println(schemaReportJson);
+            }
+        } else {
+            // Output to console
+            System.out.println();
+            System.out.println("Schema Report:");
+            System.out.println(schemaReportJson);
         }
     }
     
