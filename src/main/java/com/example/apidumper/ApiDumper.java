@@ -10,6 +10,11 @@ import org.apache.http.util.EntityUtils;
 import com.google.gson.*;
 
 import java.io.IOException;
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.File;
 import java.util.*;
 
 /**
@@ -40,18 +45,27 @@ public class ApiDumper {
                 return;
             }
             
-            String url = cmd.getOptionValue("url");
-            if (url == null || url.trim().isEmpty()) {
-                System.err.println("Error: URL is required");
-                printHelp(options);
-                System.exit(1);
+            String generateJsonFile = cmd.getOptionValue("generateJson");
+            
+            if (generateJsonFile != null && !generateJsonFile.trim().isEmpty()) {
+                // Generate JSON from schema file - standalone mode
+                generateJsonFromSchema(generateJsonFile);
+            } else {
+                // Normal API call mode - URL is required
+                String url = cmd.getOptionValue("url");
+                if (url == null || url.trim().isEmpty()) {
+                    System.err.println("Error: URL is required for API mode, or use --generateJson for JSON generation mode");
+                    printHelp(options);
+                    System.exit(1);
+                }
+                
+                boolean dumpSchemaReport = cmd.hasOption("dumpSchemaReport");
+                boolean noDataDump = cmd.hasOption("noDataDump");
+                String dumpDistinctValues = cmd.getOptionValue("dumpDistinctValues", "");
+                String reportFile = cmd.getOptionValue("reportFile");
+                
+                callApiAndOutputResponse(url, dumpSchemaReport, noDataDump, dumpDistinctValues, reportFile);
             }
-            
-            boolean dumpSchemaReport = cmd.hasOption("dumpSchemaReport");
-            boolean noDataDump = cmd.hasOption("noDataDump");
-            String dumpDistinctValues = cmd.getOptionValue("dumpDistinctValues", "");
-            
-            callApiAndOutputResponse(url, dumpSchemaReport, noDataDump, dumpDistinctValues);
             
         } catch (ParseException e) {
             System.err.println("Error parsing command line arguments: " + e.getMessage());
@@ -67,8 +81,7 @@ public class ApiDumper {
                 .longOpt("url")
                 .hasArg()
                 .argName("URL")
-                .desc("The URL of the REST API endpoint to call")
-                .required()
+                .desc("The URL of the REST API endpoint to call (required for API mode)")
                 .build();
         
         Option helpOption = Option.builder("h")
@@ -93,11 +106,27 @@ public class ApiDumper {
                 .desc("Comma-separated list of property names to dump distinct values for")
                 .build();
         
+        Option reportFileOption = Option.builder("f")
+                .longOpt("reportFile")
+                .hasArg()
+                .argName("FILE")
+                .desc("Write the schema report to the specified file instead of console")
+                .build();
+        
+        Option generateJsonOption = Option.builder("g")
+                .longOpt("generateJson")
+                .hasArg()
+                .argName("SCHEMA_FILE")
+                .desc("Generate JSON data from a schema report file based on configurable rules")
+                .build();
+        
         options.addOption(urlOption);
         options.addOption(helpOption);
         options.addOption(schemaOption);
         options.addOption(noDataDumpOption);
         options.addOption(distinctValuesOption);
+        options.addOption(reportFileOption);
+        options.addOption(generateJsonOption);
         
         return options;
     }
@@ -110,7 +139,7 @@ public class ApiDumper {
                 "Example: java -jar apidumper.jar --url https://api.example.com/data");
     }
     
-    private static void callApiAndOutputResponse(String url, boolean dumpSchemaReport, boolean noDataDump, String dumpDistinctValues) {
+    private static void callApiAndOutputResponse(String url, boolean dumpSchemaReport, boolean noDataDump, String dumpDistinctValues, String reportFile) {
         HttpClient client = HttpClients.createDefault();
         HttpGet request = new HttpGet(url);
         
@@ -144,7 +173,7 @@ public class ApiDumper {
             if (dumpSchemaReport) {
                 System.out.println();
                 System.out.println();
-                generateSchemaReport(responseBody, dumpDistinctValues);
+                generateSchemaReport(responseBody, dumpDistinctValues, reportFile);
             }
             
         } catch (IOException e) {
@@ -156,7 +185,7 @@ public class ApiDumper {
         }
     }
     
-    private static void generateSchemaReport(String jsonResponse, String dumpDistinctValues) {
+    private static void generateSchemaReport(String jsonResponse, String dumpDistinctValues, String reportFile) {
         try {
             // Check if response is empty or null
             if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
@@ -242,9 +271,26 @@ public class ApiDumper {
             
             // Output as formatted JSON
             Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            System.out.println();
-            System.out.println("Schema Report:");
-            System.out.println(gson.toJson(reportMap));
+            String jsonOutput = gson.toJson(reportMap);
+            
+            if (reportFile != null && !reportFile.trim().isEmpty()) {
+                // Write to file
+                try (PrintWriter writer = new PrintWriter(new FileWriter(reportFile))) {
+                    writer.println(jsonOutput);
+                    System.out.println("Schema report written to: " + reportFile);
+                } catch (IOException e) {
+                    System.err.println("Error writing schema report to file: " + e.getMessage());
+                    // Fall back to console output
+                    System.out.println();
+                    System.out.println("Schema Report:");
+                    System.out.println(jsonOutput);
+                }
+            } else {
+                // Output to console
+                System.out.println();
+                System.out.println("Schema Report:");
+                System.out.println(jsonOutput);
+            }
             
         } catch (JsonSyntaxException e) {
             System.err.println("Error parsing JSON for schema report: " + e.getMessage());
@@ -601,6 +647,304 @@ public class ApiDumper {
         Map<String, Map<String, Integer>> inferredTypeCounts = new LinkedHashMap<>();
         Map<String, Map<String, String>> minValues = new LinkedHashMap<>();
         Map<String, Map<String, String>> maxValues = new LinkedHashMap<>();
+    }
+    
+    // Methods for JSON generation from schema
+    private static void generateJsonFromSchema(String schemaFile) {
+        try {
+            // Read schema report
+            String schemaJson = readFile(schemaFile);
+            SchemaReport schemaReport = parseSchemaReport(schemaJson);
+            
+            // Read configuration
+            Map<String, RuleConfig> rules = readConfig("apidumper.config");
+            
+            // Apply default rule (generate-from-example)
+            String ruleName = "generate-from-example";
+            if (!rules.containsKey(ruleName)) {
+                System.err.println("Error: Rule '" + ruleName + "' not found in configuration");
+                System.err.println("Available rules: " + String.join(", ", rules.keySet()));
+                System.exit(1);
+            }
+            
+            RuleConfig rule = rules.get(ruleName);
+            JsonObject result = applyRule(schemaReport, rule);
+            
+            // Output result
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            System.out.println(ruleName);
+            System.out.println();
+            System.out.println(gson.toJson(result));
+            
+        } catch (IOException e) {
+            System.err.println("Error reading schema file: " + e.getMessage());
+            System.exit(1);
+        } catch (Exception e) {
+            System.err.println("Error generating JSON: " + e.getMessage());
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+    
+    private static String readFile(String filename) throws IOException {
+        StringBuilder content = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+        }
+        return content.toString();
+    }
+    
+    private static SchemaReport parseSchemaReport(String json) {
+        Gson gson = new Gson();
+        JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
+        return gson.fromJson(jsonObject, SchemaReport.class);
+    }
+    
+    private static Map<String, RuleConfig> readConfig(String configFile) throws IOException {
+        Map<String, RuleConfig> rules = new LinkedHashMap<>();
+        
+        // Default generate-from-example rule
+        RuleConfig generateFromExampleRule = new RuleConfig();
+        generateFromExampleRule.type = "generate-from-example";
+        generateFromExampleRule.description = "Generate JSON using example values from schema report";
+        rules.put("generate-from-example", generateFromExampleRule);
+        
+        // Try to read config file if it exists
+        File config = new File(configFile);
+        if (config.exists()) {
+            String configContent = readFile(configFile);
+            parseConfigFile(configContent, rules);
+        }
+        
+        return rules;
+    }
+    
+    private static void parseConfigFile(String configContent, Map<String, RuleConfig> rules) {
+        // Simple config parser - one rule per line
+        // Format: ruleName=ruleType:description
+        String[] lines = configContent.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty() || line.startsWith("#")) {
+                continue; // Skip empty lines and comments
+            }
+            
+            if (line.contains("=")) {
+                String[] parts = line.split("=", 2);
+                if (parts.length == 2) {
+                    String ruleName = parts[0].trim();
+                    String ruleDef = parts[1].trim();
+                    
+                    RuleConfig rule = new RuleConfig();
+                    if (ruleDef.contains(":")) {
+                        String[] ruleParts = ruleDef.split(":", 2);
+                        rule.type = ruleParts[0].trim();
+                        rule.description = ruleParts[1].trim();
+                    } else {
+                        rule.type = ruleDef;
+                        rule.description = "Custom rule: " + ruleDef;
+                    }
+                    rules.put(ruleName, rule);
+                }
+            }
+        }
+    }
+    
+    private static JsonObject applyRule(SchemaReport schemaReport, RuleConfig rule) {
+        switch (rule.type.toLowerCase()) {
+            case "generate-from-example":
+                return generateFromExample(schemaReport);
+            default:
+                throw new IllegalArgumentException("Unknown rule type: " + rule.type);
+        }
+    }
+    
+    private static JsonObject generateFromExample(SchemaReport schemaReport) {
+        JsonObject result = new JsonObject();
+        
+        for (SchemaProperty property : schemaReport.schemaReport) {
+            setPropertyValue(result, property.property, property);
+        }
+        
+        return result;
+    }
+    
+    private static void setPropertyValue(JsonObject obj, String propertyPath, SchemaProperty property) {
+        String[] pathParts = propertyPath.split("\\.");
+        JsonObject current = obj;
+        
+        // Navigate/create nested objects
+        for (int i = 0; i < pathParts.length - 1; i++) {
+            String part = pathParts[i];
+            if (!current.has(part)) {
+                current.add(part, new JsonObject());
+            } else {
+                // Check if the existing value is already a JsonObject
+                JsonElement existingElement = current.get(part);
+                if (existingElement.isJsonObject()) {
+                    current = existingElement.getAsJsonObject();
+                } else if (existingElement.isJsonArray()) {
+                    // If it's a JsonArray, we need to navigate into the first element for nested properties
+                    JsonArray array = existingElement.getAsJsonArray();
+                    
+                    // Ensure the array has at least one element
+                    if (array.size() == 0) {
+                        // Add an empty object to the array
+                        JsonObject emptyObject = new JsonObject();
+                        array.add(emptyObject);
+                    }
+                    
+                    // Navigate into the first element of the array
+                    JsonElement firstElement = array.get(0);
+                    if (firstElement.isJsonObject()) {
+                        current = firstElement.getAsJsonObject();
+                    } else {
+                        // If the first element is not an object, replace it with an object
+                        JsonObject newObject = new JsonObject();
+                        array.set(0, newObject);
+                        current = newObject;
+                    }
+                } else {
+                    // If it's not a JsonObject or JsonArray, replace it with a new JsonObject
+                    current.add(part, new JsonObject());
+                    current = current.getAsJsonObject(part);
+                }
+            }
+        }
+        
+        // Set the final value
+        String finalProperty = pathParts[pathParts.length - 1];
+        JsonElement value = getExampleValue(property);
+        current.add(finalProperty, value);
+    }
+    
+    private static JsonElement getExampleValue(SchemaProperty property) {
+        if (property.dataTypes.isEmpty()) {
+            return JsonNull.INSTANCE;
+        }
+        
+        DataTypeInfo dataType = property.dataTypes.get(0); // Use first data type
+        Object example = dataType.example;
+        
+        if (example == null) {
+            return JsonNull.INSTANCE;
+        } else if ("array".equals(dataType.type)) {
+            // Handle array data type
+            if (example instanceof String && "[array]".equals(((String) example).trim())) {
+                // Special case: generate an array containing an empty object
+                JsonArray jsonArray = new JsonArray();
+                JsonObject emptyObject = new JsonObject();
+                jsonArray.add(emptyObject);
+                return jsonArray;
+            } else {
+                return convertToJsonArray(example);
+            }
+        } else if (example instanceof String) {
+            return new JsonPrimitive((String) example);
+        } else if (example instanceof Number) {
+            return new JsonPrimitive((Number) example);
+        } else if (example instanceof Boolean) {
+            return new JsonPrimitive((Boolean) example);
+        } else {
+            return new JsonPrimitive(example.toString());
+        }
+    }
+    
+    private static JsonArray convertToJsonArray(Object example) {
+        JsonArray jsonArray = new JsonArray();
+        
+        if (example instanceof List) {
+            List<?> list = (List<?>) example;
+            for (Object item : list) {
+                jsonArray.add(convertObjectToJsonElement(item));
+            }
+        } else if (example instanceof Object[]) {
+            Object[] array = (Object[]) example;
+            for (Object item : array) {
+                jsonArray.add(convertObjectToJsonElement(item));
+            }
+        } else {
+            // If it's not a recognized array type, try to parse it as a string representation
+            String str = example.toString();
+            if (str.startsWith("[") && str.endsWith("]")) {
+                // Try to parse as JSON array string
+                try {
+                    JsonElement parsed = JsonParser.parseString(str);
+                    if (parsed.isJsonArray()) {
+                        return parsed.getAsJsonArray();
+                    }
+                } catch (Exception e) {
+                    // If parsing fails, handle special cases
+                    String trimmedStr = str.trim();
+                    if ("[array]".equals(trimmedStr)) {
+                        // Special case: generate an array containing an empty object
+                        JsonObject emptyObject = new JsonObject();
+                        jsonArray.add(emptyObject);
+                    } else if ("[object]".equals(trimmedStr)) {
+                        // Special case: generate an array containing an empty object
+                        JsonObject emptyObject = new JsonObject();
+                        jsonArray.add(emptyObject);
+                    } else {
+                        // For other invalid JSON, treat as single element array
+                        jsonArray.add(new JsonPrimitive(str));
+                    }
+                }
+            } else {
+                // Single value, wrap in array
+                jsonArray.add(convertObjectToJsonElement(example));
+            }
+        }
+        
+        return jsonArray;
+    }
+    
+    private static JsonElement convertObjectToJsonElement(Object obj) {
+        if (obj == null) {
+            return JsonNull.INSTANCE;
+        } else if (obj instanceof String) {
+            return new JsonPrimitive((String) obj);
+        } else if (obj instanceof Number) {
+            return new JsonPrimitive((Number) obj);
+        } else if (obj instanceof Boolean) {
+            return new JsonPrimitive((Boolean) obj);
+        } else {
+            return new JsonPrimitive(obj.toString());
+        }
+    }
+    
+    // Data classes for JSON parsing
+    public static class SchemaReport {
+        public List<SchemaProperty> schemaReport;
+    }
+    
+    public static class SchemaProperty {
+        public String property;
+        public int count;
+        public int distinctValues;
+        public List<String> distinctValuesArray;
+        public List<DataTypeInfo> dataTypes;
+    }
+    
+    public static class DataTypeInfo {
+        public String type;
+        public int count;
+        public Object example;
+        public List<InferredTypeInfo> inferredTypes;
+        public Map<String, String> minValues;
+        public Map<String, String> maxValues;
+    }
+    
+    public static class InferredTypeInfo {
+        public String type;
+        public int count;
+    }
+    
+    public static class RuleConfig {
+        public String type;
+        public String description;
     }
 }
 

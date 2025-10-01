@@ -1,0 +1,58 @@
+{
+  "schemaReport": [
+    {
+      "property": "user.name",
+      "count": 5,
+      "distinctValues": 3,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 5,
+          "example": "John Doe",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "user.hobbies",
+      "count": 5,
+      "distinctValues": 4,
+      "dataTypes": [
+        {
+          "type": "array",
+          "count": 5,
+          "example": ["reading", "swimming", "coding"]
+        }
+      ]
+    },
+    {
+      "property": "user.scores",
+      "count": 5,
+      "distinctValues": 5,
+      "dataTypes": [
+        {
+          "type": "array",
+          "count": 5,
+          "example": [85, 92, 78, 96, 88]
+        }
+      ]
+    },
+    {
+      "property": "user.tags",
+      "count": 5,
+      "distinctValues": 3,
+      "dataTypes": [
+        {
+          "type": "array",
+          "count": 5,
+          "example": ["developer", "senior", "remote"]
+        }
+      ]
+    }
+  ]
+}

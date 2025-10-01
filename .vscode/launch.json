@@ -17,6 +17,46 @@
             "mainClass": "com.example.apidumper.ApiDumper",
             "projectName": "apidumper",
             "args": "--url https://www.gamerpower.com/api/giveaways?platform=steam&type=loot&sort-by=popularity --dumpSchemaReport --noDataDump"
+        },
+        {
+            "type": "java",
+            "name": "ApiDumper with ReportFile",
+            "request": "launch",
+            "mainClass": "com.example.apidumper.ApiDumper",
+            "projectName": "apidumper",
+            "args": "--url https://www.amiiboapi.com/api/amiibo/ --dumpSchemaReport --noDataDump --reportFile schema-report.json"
+        },
+        {
+            "type": "java",
+            "name": "ApiDumper Generate JSON",
+            "request": "launch",
+            "mainClass": "com.example.apidumper.ApiDumper",
+            "projectName": "apidumper",
+            "args": "--generateJson schema-report.json"
+        },
+        {
+            "type": "java",
+            "name": "ApiDumper Generate JSON with Arrays",
+            "request": "launch",
+            "mainClass": "com.example.apidumper.ApiDumper",
+            "projectName": "apidumper",
+            "args": "--generateJson sample-schema-with-arrays.json"
+        },
+        {
+            "type": "java",
+            "name": "ApiDumper Test Array Issue",
+            "request": "launch",
+            "mainClass": "com.example.apidumper.ApiDumper",
+            "projectName": "apidumper",
+            "args": "--generateJson test-array-issue.json"
+        },
+        {
+            "type": "java",
+            "name": "ApiDumper Simple Array Test",
+            "request": "launch",
+            "mainClass": "com.example.apidumper.ApiDumper",
+            "projectName": "apidumper",
+            "args": "--generateJson simple-array-test.json"
         }
     ]
 }

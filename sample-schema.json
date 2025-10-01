@@ -1,0 +1,100 @@
+{
+  "schemaReport": [
+    {
+      "property": "user.name",
+      "count": 5,
+      "distinctValues": 3,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 5,
+          "example": "John Doe",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "user.age",
+      "count": 5,
+      "distinctValues": 4,
+      "dataTypes": [
+        {
+          "type": "number",
+          "count": 5,
+          "example": 25
+        }
+      ]
+    },
+    {
+      "property": "user.active",
+      "count": 5,
+      "distinctValues": 2,
+      "dataTypes": [
+        {
+          "type": "boolean",
+          "count": 5,
+          "example": true
+        }
+      ]
+    },
+    {
+      "property": "user.email",
+      "count": 5,
+      "distinctValues": 5,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 5,
+          "example": "john.doe@example.com",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "user.address.street",
+      "count": 5,
+      "distinctValues": 3,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 5,
+          "example": "123 Main St",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "user.address.city",
+      "count": 5,
+      "distinctValues": 2,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 5,
+          "example": "New York",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

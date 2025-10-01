@@ -37,24 +37,42 @@ jar cfe apidumper.jar com.example.apidumper.ApiDumper -C . com/ -C . META-INF/
 
 ## Usage
 
+ApiDumper operates in two distinct modes:
+
+### Mode 1: API Analysis (Default)
+Analyzes REST API responses and generates schema reports.
+
+### Mode 2: JSON Generation
+Generates JSON data from existing schema report files.
+
 ### Run with Maven
 
 ```bash
+# API Analysis Mode
 mvn exec:java -Dexec.mainClass="com.example.apidumper.ApiDumper" -Dexec.args="--url https://api.example.com/data"
+
+# JSON Generation Mode  
+mvn exec:java -Dexec.mainClass="com.example.apidumper.ApiDumper" -Dexec.args="--generateJson schema-report.json"
 ```
 
 ### Run the JAR file
 
 ```bash
+# API Analysis Mode
 java -jar target/apidumper-1.0.0.jar --url "https://api.example.com/data"
+
+# JSON Generation Mode
+java -jar target/apidumper-1.0.0.jar --generateJson schema-report.json
 ```
 
 ### Command Line Options
 
-- `--url` or `-u`: The URL of the REST API endpoint to call (required)
-- `--dumpSchemaReport` or `-s`: Generate a detailed schema report analyzing the JSON response structure (optional)
-- `--noDataDump` or `-n`: Suppress output of the response body to console (optional)
+- `--url` or `-u`: The URL of the REST API endpoint to call (required for API mode only)
+- `--dumpSchemaReport` or `-s`: Generate a detailed schema report analyzing the JSON response structure (optional, API mode only)
+- `--noDataDump` or `-n`: Suppress output of the response body to console (optional, API mode only)
 - `--dumpDistinctValues` or `-d`: Comma-separated list of property names to show all distinct values as JSON arrays (optional, requires `--dumpSchemaReport`)
+- `--reportFile` or `-f`: Write the schema report to the specified file instead of console (optional, requires `--dumpSchemaReport`)
+- `--generateJson` or `-g`: Generate JSON data from a schema report file based on configurable rules (standalone mode, alternative to API mode)
 - `--help` or `-h`: Display help message
 
 ## Features
@@ -405,6 +423,112 @@ Schema Report:
     }
   ]
 }
+```
+
+### Schema Report to File
+
+```bash
+java -jar target/apidumper-1.0.0.jar --url "https://www.amiiboapi.com/api/amiibo/" --dumpSchemaReport --noDataDump --reportFile schema-report.json
+```
+
+```
+Calling API: https://www.amiiboapi.com/api/amiibo/
+--------------------------------------------------
+Status Code: 200
+Reason Phrase: OK
+
+Schema report written to: schema-report.json
+```
+
+The schema report will be written to the specified file instead of being displayed on the console. If there's an error writing to the file, the report will fall back to console output.
+
+### Generate JSON from Schema Report
+
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema-report.json
+```
+
+This mode generates JSON data from a previously created schema report file. The tool uses configurable rules defined in `apidumper.config` to determine how to generate the data.
+
+#### Configuration File (apidumper.config)
+
+The configuration file defines rules for data generation:
+
+```
+# Comments start with #
+ruleName=ruleType:description
+
+# Example:
+generate-from-example=generate-from-example:Generate JSON using example values from schema report
+```
+
+#### Default Rule: generate-from-example
+
+The default rule creates JSON by:
+- Using the first data type's example value for each property
+- Preserving nested structure (e.g., `user.address.street` becomes nested objects)
+- Handling different data types (string, number, boolean, array) appropriately
+- Converting array data types to JSON arrays
+- Special handling for `"[array]"` and `"[object]"` examples (generates arrays containing empty objects)
+
+**Example:**
+
+Input schema report:
+```json
+{
+  "schemaReport": [
+    {
+      "property": "user.name",
+      "dataTypes": [
+        {
+          "type": "string",
+          "example": "John Doe"
+        }
+      ]
+    },
+    {
+      "property": "user.age",
+      "dataTypes": [
+        {
+          "type": "number",
+          "example": 25
+        }
+      ]
+    },
+    {
+      "property": "user.hobbies",
+      "dataTypes": [
+        {
+          "type": "array",
+          "example": ["reading", "swimming", "coding"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+Output JSON:
+```json
+{
+  "user": {
+    "name": "John Doe",
+    "age": 25,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+```
+
+#### Complete Workflow Example
+
+1. **Generate schema report:**
+```bash
+java -jar target/apidumper-1.0.0.jar --url "https://api.example.com/data" --dumpSchemaReport --noDataDump --reportFile schema.json
+```
+
+2. **Generate sample data:**
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema.json > sample-data.json
 ```
 
 ## Error Handling
