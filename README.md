@@ -627,6 +627,59 @@ nullValues.user.hobbies
 
 This rule is useful for testing API endpoints to ensure they handle null values gracefully.
 
+#### Empty Values Rule
+
+The `emptyValues` rule generates multiple JSON examples, each with one property set to its empty form:
+
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema.json --rule emptyValues
+```
+
+**Supported Empty Types:**
+- **Arrays** → `[]` (empty array)
+- **Strings** → `""` (empty string)  
+- **Objects** → `{}` (empty object)
+
+**Output Format:**
+- Each JSON example is preceded by a newline
+- Rule name followed by a period and the property name set to empty
+- Another newline
+- The generated JSON
+
+**Example Output:**
+```
+emptyValues.name
+
+{
+  "name": "",
+  "hobbies": ["reading", "swimming"],
+  "profile": {"bio": "Software developer"},
+  "age": 25
+}
+
+emptyValues.hobbies
+
+{
+  "name": "John Doe",
+  "hobbies": [],
+  "profile": {"bio": "Software developer"},
+  "age": 25
+}
+
+emptyValues.profile
+
+{
+  "name": "John Doe",
+  "hobbies": ["reading", "swimming"],
+  "profile": {},
+  "age": 25
+}
+```
+
+**Note:** Properties that cannot be empty (like numbers, booleans) are skipped by this rule.
+
+This rule is useful for testing API endpoints to ensure they handle empty values gracefully.
+
 #### Executing All Rules
 
 When no `--rule` is specified, all available rules in the configuration file are executed:
@@ -703,6 +756,26 @@ nullValues.user.hobbies
     "name": "John Doe",
     "age": 25,
     "hobbies": null
+  }
+}
+
+emptyValues.user.name
+
+{
+  "user": {
+    "name": "",
+    "age": 25,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+emptyValues.user.hobbies
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 25,
+    "hobbies": []
   }
 }
 ```
