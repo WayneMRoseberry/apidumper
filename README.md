@@ -68,9 +68,9 @@ java -jar target/apidumper-1.0.0.jar --url "https://api.example.com/data"
   - Occurrence count for each property
   - Number of distinct values
   - Example values for each data type
-  - Inferred data types for string properties (detects integer, float, boolean, date, time, datetime)
+  - Inferred data types for string properties (detects integer, float, boolean, date, time, datetime, guid)
   - Shows comma-separated list when a property contains multiple inferred types
-  - Min and max values for each inferred data type
+  - Min and max values for all data types (numbers, strings with inferred types, booleans)
   - Optional distinct values dump for specified properties (as JSON arrays)
 - Includes comprehensive error handling for various HTTP and network errors
 - Uses Apache HttpClient 4.5.14 for HTTP client functionality (Java 8 compatible)
@@ -113,73 +113,184 @@ Response Body:
 
 
 Schema Report:
-================================================================================
-
-Property: amiibo
-  Count: 1
-  Distinct Values: 1
-  Data Types:
-    - array
-      Example: [array]
-
-Property: amiibo.amiiboSeries
-  Count: 800
-  Distinct Values: 45
-  Data Types:
-    - string
-      Example: "Animal Crossing"
-      Inferred Type: string
-
-Property: amiibo.character
-  Count: 800
-  Distinct Values: 350
-  Data Types:
-    - string
-      Example: "Sandy"
-      Inferred Type: string
-
-Property: amiibo.type
-  Count: 800
-  Distinct Values: 2
-  Distinct Values Array: ["Card","Figure"]
-  Data Types:
-    - string
-      Example: "Card"
-      Inferred Type: string
-
-Property: amiibo.release.au
-  Count: 800
-  Distinct Values: 125
-  Data Types:
-    - string
-      Example: "2016-11-10"
-      Inferred Type: date
-      Min Value: date: "2015-01-22"
-      Max Value: date: "2021-11-05"
-    - null
-      Example: null
-
-Property: amiibo.head
-  Count: 800
-  Distinct Values: 450
-  Data Types:
-    - string
-      Example: "04380001"
-      Inferred Type: string
-
-Property: mixedField
-  Count: 100
-  Distinct Values: 100
-  Data Types:
-    - string
-      Example: "123"
-      Inferred Type: integer, date, string
-      Min Value: integer: "1", date: "2020-01-01", string: "apple"
-      Max Value: integer: "999", date: "2024-12-31", string: "zebra"
-
-... (additional properties)
-
-================================================================================
+{
+  "schemaReport": [
+    {
+      "property": "amiibo",
+      "count": 1,
+      "distinctValues": 1,
+      "dataTypes": [
+        {
+          "type": "array",
+          "count": 1,
+          "example": "[array]"
+        }
+      ]
+    },
+    {
+      "property": "amiibo.amiiboSeries",
+      "count": 800,
+      "distinctValues": 45,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 800,
+          "example": "Animal Crossing",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 800
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "amiibo.character",
+      "count": 800,
+      "distinctValues": 350,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 800,
+          "example": "Sandy",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 800
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "amiibo.type",
+      "count": 800,
+      "distinctValues": 2,
+      "distinctValuesArray": ["Card", "Figure"],
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 800,
+          "example": "Card",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 800
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "someNumericField",
+      "count": 500,
+      "distinctValues": 250,
+      "dataTypes": [
+        {
+          "type": "number",
+          "count": 500,
+          "example": 42.5,
+          "minValues": {
+            "number": "1.0"
+          },
+          "maxValues": {
+            "number": "999.99"
+          }
+        }
+      ]
+    },
+    {
+      "property": "amiibo.release.au",
+      "count": 800,
+      "distinctValues": 125,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 775,
+          "example": "2016-11-10",
+          "inferredTypes": [
+            {
+              "type": "date",
+              "count": 775
+            }
+          ],
+          "minValues": {
+            "date": "2015-01-22"
+          },
+          "maxValues": {
+            "date": "2021-11-05"
+          }
+        },
+        {
+          "type": "null",
+          "count": 25,
+          "example": null
+        }
+      ]
+    },
+    {
+      "property": "userId",
+      "count": 1000,
+      "distinctValues": 1000,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 1000,
+          "example": "550e8400-e29b-41d4-a716-446655440000",
+          "inferredTypes": [
+            {
+              "type": "guid",
+              "count": 1000
+            }
+          ],
+          "minValues": {
+            "guid": "00000000-0000-0000-0000-000000000001"
+          },
+          "maxValues": {
+            "guid": "ffffffff-ffff-ffff-ffff-ffffffffffff"
+          }
+        }
+      ]
+    },
+    {
+      "property": "mixedField",
+      "count": 100,
+      "distinctValues": 100,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 100,
+          "example": "123",
+          "inferredTypes": [
+            {
+              "type": "integer",
+              "count": 40
+            },
+            {
+              "type": "date",
+              "count": 30
+            },
+            {
+              "type": "string",
+              "count": 30
+            }
+          ],
+          "minValues": {
+            "integer": "1",
+            "date": "2020-01-01",
+            "string": "apple"
+          },
+          "maxValues": {
+            "integer": "999",
+            "date": "2024-12-31",
+            "string": "zebra"
+          }
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ### Schema Report Only (Suppress Response Body)
@@ -196,36 +307,46 @@ Reason Phrase: OK
 
 
 Schema Report:
-================================================================================
-
-Property: amiibo
-  Count: 1
-  Distinct Values: 1
-  Data Types:
-    - array
-      Example: [array]
-
-Property: amiibo.amiiboSeries
-  Count: 800
-  Distinct Values: 45
-  Data Types:
-    - string
-      Example: "Animal Crossing"
-      Inferred Type: string
-
-Property: amiibo.release.au
-  Count: 800
-  Distinct Values: 125
-  Data Types:
-    - string
-      Example: "2016-11-10"
-      Inferred Type: date
-      Min Value: date: "2015-01-22"
-      Max Value: date: "2021-11-05"
-
-... (all properties shown without the response body)
-
-================================================================================
+{
+  "schemaReport": [
+    {
+      "property": "amiibo",
+      "count": 1,
+      "distinctValues": 1,
+      "dataTypes": [
+        {
+          "type": "array",
+          "count": 1,
+          "example": "[array]"
+        }
+      ]
+    },
+    {
+      "property": "amiibo.release.au",
+      "count": 800,
+      "distinctValues": 125,
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 775,
+          "example": "2016-11-10",
+          "inferredTypes": [
+            {
+              "type": "date",
+              "count": 775
+            }
+          ],
+          "minValues": {
+            "date": "2015-01-22"
+          },
+          "maxValues": {
+            "date": "2021-11-05"
+          }
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ### With Distinct Values Dump
@@ -242,27 +363,48 @@ Reason Phrase: OK
 
 
 Schema Report:
-================================================================================
-
-Property: amiibo.type
-  Count: 800
-  Distinct Values: 2
-  Distinct Values Array: ["Card","Figure"]
-  Data Types:
-    - string
-      Example: "Card"
-      Inferred Type: string
-
-Property: amiibo.gameSeries
-  Count: 800
-  Distinct Values: 35
-  Distinct Values Array: ["Animal Crossing","Chibi-Robo!","Darkstalkers","Diablo","Fire Emblem","Kirby","Mario Sports Superstars","Mega Man","Metroid","Mii","Monster Hunter Stories","Pikmin","Pokémon","Shovel Knight","Splatoon","Star Fox","Super Mario","Super Smash Bros.","The Legend of Zelda","Xenoblade Chronicles","Yo-kai Watch","Yoshi"]
-  Data Types:
-    - string
-      Example: "Animal Crossing"
-      Inferred Type: string
-
-================================================================================
+{
+  "schemaReport": [
+    {
+      "property": "amiibo.type",
+      "count": 800,
+      "distinctValues": 2,
+      "distinctValuesArray": ["Card", "Figure"],
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 800,
+          "example": "Card",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 800
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "property": "amiibo.gameSeries",
+      "count": 800,
+      "distinctValues": 35,
+      "distinctValuesArray": ["Animal Crossing", "Chibi-Robo!", "Darkstalkers", "Diablo", "Fire Emblem", "Kirby", "Mario Sports Superstars", "Mega Man", "Metroid", "Mii", "Monster Hunter Stories", "Pikmin", "Pokémon", "Shovel Knight", "Splatoon", "Star Fox", "Super Mario", "Super Smash Bros.", "The Legend of Zelda", "Xenoblade Chronicles", "Yo-kai Watch", "Yoshi"],
+      "dataTypes": [
+        {
+          "type": "string",
+          "count": 800,
+          "example": "Animal Crossing",
+          "inferredTypes": [
+            {
+              "type": "string",
+              "count": 800
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ## Error Handling
