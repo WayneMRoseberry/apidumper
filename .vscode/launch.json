@@ -16,7 +16,7 @@
             "request": "launch",
             "mainClass": "com.example.apidumper.ApiDumper",
             "projectName": "apidumper",
-            "args": "--url https://www.amiiboapi.com/api/amiibo/ --dumpSchemaReport --noDataDump --dumpDistinctValues \"amiibo.type,amiibo.gameSeries\""
+            "args": "--url https://www.gamerpower.com/api/giveaways?platform=steam&type=loot&sort-by=popularity --dumpSchemaReport --noDataDump"
         }
     ]
 }

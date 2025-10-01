@@ -158,8 +158,11 @@ public class ApiDumper {
     
     private static void generateSchemaReport(String jsonResponse, String dumpDistinctValues) {
         try {
-            System.out.println("Schema Report:");
-            System.out.println(repeat("=", 80));
+            // Check if response is empty or null
+            if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
+                System.err.println("Error: Response body is empty. Cannot generate schema report.");
+                return;
+            }
             
             JsonElement element = JsonParser.parseString(jsonResponse);
             
@@ -175,51 +178,89 @@ public class ApiDumper {
                 }
             }
             
-            // Print the report
+            // Build the JSON report
+            Map<String, Object> reportMap = new LinkedHashMap<>();
+            List<Map<String, Object>> properties = new ArrayList<>();
+            
             for (Map.Entry<String, PropertyInfo> entry : propertyMap.entrySet()) {
                 PropertyInfo info = entry.getValue();
                 String propertyName = entry.getKey();
-                System.out.println();
-                System.out.println("Property: " + propertyName);
-                System.out.println("  Count: " + info.count);
-                System.out.println("  Distinct Values: " + info.distinctValues.size());
                 
-                // Show distinct values array if requested for this property
+                Map<String, Object> propertyReport = new LinkedHashMap<>();
+                propertyReport.put("property", propertyName);
+                propertyReport.put("count", info.count);
+                propertyReport.put("distinctValues", info.distinctValues.size());
+                
+                // Add distinct values array if requested
                 if (distinctValueProps.contains(propertyName)) {
-                    System.out.println("  Distinct Values Array: " + formatDistinctValuesAsJson(info.distinctValues));
+                    List<String> sortedValues = new ArrayList<>(info.distinctValues);
+                    Collections.sort(sortedValues);
+                    propertyReport.put("distinctValuesArray", sortedValues);
                 }
                 
-                System.out.println("  Data Types:");
-                
+                // Build data types array
+                List<Map<String, Object>> dataTypesList = new ArrayList<>();
                 for (Map.Entry<String, Object> typeEntry : info.typeExamples.entrySet()) {
                     String dataType = typeEntry.getKey();
-                    System.out.println("    - " + dataType);
-                    System.out.println("      Example: " + formatExample(typeEntry.getValue()));
+                    Map<String, Object> dataTypeInfo = new LinkedHashMap<>();
+                    dataTypeInfo.put("type", dataType);
+                    dataTypeInfo.put("count", info.typeCounts.getOrDefault(dataType, 0));
+                    dataTypeInfo.put("example", typeEntry.getValue());
                     
-                    // Show inferred type for strings
+                    // Add inferred types for strings with their counts
                     if (dataType.equals("string") && info.inferredTypesSet.containsKey(dataType)) {
                         Set<String> inferredTypes = info.inferredTypesSet.get(dataType);
-                        String inferredTypesList = String.join(", ", inferredTypes);
-                        System.out.println("      Inferred Type: " + inferredTypesList);
+                        Map<String, Integer> inferredCounts = info.inferredTypeCounts.get(dataType);
                         
-                        // Show min/max values for each inferred type
-                        if (info.minValues.containsKey(dataType)) {
-                            System.out.println("      Min Value: " + formatMinMaxValues(info.minValues.get(dataType)));
+                        // Build inferred types array with counts
+                        List<Map<String, Object>> inferredTypesList = new ArrayList<>();
+                        for (String inferredType : inferredTypes) {
+                            Map<String, Object> inferredTypeInfo = new LinkedHashMap<>();
+                            inferredTypeInfo.put("type", inferredType);
+                            inferredTypeInfo.put("count", inferredCounts.getOrDefault(inferredType, 0));
+                            inferredTypesList.add(inferredTypeInfo);
                         }
-                        if (info.maxValues.containsKey(dataType)) {
-                            System.out.println("      Max Value: " + formatMinMaxValues(info.maxValues.get(dataType)));
-                        }
+                        dataTypeInfo.put("inferredTypes", inferredTypesList);
                     }
+                    
+                    // Add min/max values
+                    if (info.minValues.containsKey(dataType) && !info.minValues.get(dataType).isEmpty()) {
+                        dataTypeInfo.put("minValues", info.minValues.get(dataType));
+                    }
+                    if (info.maxValues.containsKey(dataType) && !info.maxValues.get(dataType).isEmpty()) {
+                        dataTypeInfo.put("maxValues", info.maxValues.get(dataType));
+                    }
+                    
+                    dataTypesList.add(dataTypeInfo);
                 }
+                
+                propertyReport.put("dataTypes", dataTypesList);
+                properties.add(propertyReport);
             }
             
+            reportMap.put("schemaReport", properties);
+            
+            // Output as formatted JSON
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
             System.out.println();
-            System.out.println(repeat("=", 80));
+            System.out.println("Schema Report:");
+            System.out.println(gson.toJson(reportMap));
             
         } catch (JsonSyntaxException e) {
             System.err.println("Error parsing JSON for schema report: " + e.getMessage());
+            System.err.println("Response preview (first 500 chars):");
+            if (jsonResponse != null) {
+                String preview = jsonResponse.length() > 500 ? jsonResponse.substring(0, 500) + "..." : jsonResponse;
+                System.err.println(preview);
+            }
+            System.err.println("\nThe response may not be valid JSON. Common causes:");
+            System.err.println("  - The API returned HTML (error page) instead of JSON");
+            System.err.println("  - The API returned plain text");
+            System.err.println("  - The response is malformed JSON");
+            System.err.println("\nTip: Use --noDataDump to suppress response body and see only this error.");
         } catch (Exception e) {
             System.err.println("Error generating schema report: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -256,11 +297,22 @@ public class ApiDumper {
             info.typeExamples.put(dataType, getExampleValue(value));
         }
         
+        // Track data type counts
+        info.typeCounts.put(dataType, info.typeCounts.getOrDefault(dataType, 0) + 1);
+        
         // Track distinct values (convert to string representation for comparison)
         String valueStr = getValueAsString(value);
         info.distinctValues.add(valueStr);
         
-        // Infer type for string values
+        // Track min/max values for all types
+        if (!info.minValues.containsKey(dataType)) {
+            info.minValues.put(dataType, new LinkedHashMap<>());
+        }
+        if (!info.maxValues.containsKey(dataType)) {
+            info.maxValues.put(dataType, new LinkedHashMap<>());
+        }
+        
+        // Handle string values with inferred types
         if (dataType.equals("string") && value.isJsonPrimitive()) {
             String strValue = value.getAsString();
             String inferredType = inferDataType(strValue);
@@ -271,15 +323,24 @@ public class ApiDumper {
             }
             info.inferredTypesSet.get(dataType).add(inferredType);
             
-            // Track min/max values for each inferred type
-            if (!info.minValues.containsKey(dataType)) {
-                info.minValues.put(dataType, new LinkedHashMap<>());
+            // Track inferred type counts
+            if (!info.inferredTypeCounts.containsKey(dataType)) {
+                info.inferredTypeCounts.put(dataType, new LinkedHashMap<>());
             }
-            if (!info.maxValues.containsKey(dataType)) {
-                info.maxValues.put(dataType, new LinkedHashMap<>());
-            }
+            Map<String, Integer> inferredCounts = info.inferredTypeCounts.get(dataType);
+            inferredCounts.put(inferredType, inferredCounts.getOrDefault(inferredType, 0) + 1);
             
             updateMinMaxValues(info.minValues.get(dataType), info.maxValues.get(dataType), inferredType, strValue);
+        }
+        // Handle numeric types directly
+        else if (dataType.equals("number") && value.isJsonPrimitive()) {
+            JsonPrimitive primitive = value.getAsJsonPrimitive();
+            updateMinMaxValuesForNumber(info.minValues.get(dataType), info.maxValues.get(dataType), primitive);
+        }
+        // Handle boolean types
+        else if (dataType.equals("boolean") && value.isJsonPrimitive()) {
+            String boolValue = value.getAsString();
+            updateMinMaxValues(info.minValues.get(dataType), info.maxValues.get(dataType), "boolean", boolValue);
         }
     }
     
@@ -323,25 +384,28 @@ public class ApiDumper {
         return element.toString();
     }
     
-    private static String formatExample(Object example) {
-        if (example == null) {
-            return "null";
-        } else if (example instanceof String) {
-            String str = (String) example;
-            if (str.length() > 100) {
-                return "\"" + str.substring(0, 97) + "...\"";
-            }
-            return "\"" + str + "\"";
-        }
-        return example.toString();
-    }
     
-    private static String formatDistinctValuesAsJson(Set<String> distinctValues) {
-        Gson gson = new Gson();
-        // Convert set to sorted list for consistent output
-        List<String> sortedValues = new ArrayList<>(distinctValues);
-        Collections.sort(sortedValues);
-        return gson.toJson(sortedValues);
+    private static void updateMinMaxValuesForNumber(Map<String, String> minMap, Map<String, String> maxMap, JsonPrimitive primitive) {
+        try {
+            double doubleValue = primitive.getAsDouble();
+            String valueStr = primitive.getAsString();
+            
+            if (!minMap.containsKey("number")) {
+                minMap.put("number", valueStr);
+                maxMap.put("number", valueStr);
+            } else {
+                double currentMin = Double.parseDouble(minMap.get("number"));
+                double currentMax = Double.parseDouble(maxMap.get("number"));
+                if (doubleValue < currentMin) {
+                    minMap.put("number", valueStr);
+                }
+                if (doubleValue > currentMax) {
+                    maxMap.put("number", valueStr);
+                }
+            }
+        } catch (NumberFormatException e) {
+            // Skip if parsing fails
+        }
     }
     
     private static void updateMinMaxValues(Map<String, String> minMap, Map<String, String> maxMap, String inferredType, String value) {
@@ -408,6 +472,23 @@ public class ApiDumper {
                 }
                 break;
                 
+            case "guid":
+                // For GUIDs, compare lexicographically
+                if (!minMap.containsKey(inferredType)) {
+                    minMap.put(inferredType, value);
+                    maxMap.put(inferredType, value);
+                } else {
+                    String currentMin = minMap.get(inferredType);
+                    String currentMax = maxMap.get(inferredType);
+                    if (value.compareTo(currentMin) < 0) {
+                        minMap.put(inferredType, value);
+                    }
+                    if (value.compareTo(currentMax) > 0) {
+                        maxMap.put(inferredType, value);
+                    }
+                }
+                break;
+                
             case "string":
                 // For strings, compare lexicographically
                 if (!minMap.containsKey(inferredType)) {
@@ -442,13 +523,6 @@ public class ApiDumper {
         }
     }
     
-    private static String formatMinMaxValues(Map<String, String> valueMap) {
-        List<String> formattedValues = new ArrayList<>();
-        for (Map.Entry<String, String> entry : valueMap.entrySet()) {
-            formattedValues.add(entry.getKey() + ": \"" + entry.getValue() + "\"");
-        }
-        return String.join(", ", formattedValues);
-    }
     
     private static String getValueAsString(JsonElement element) {
         if (element.isJsonNull()) {
@@ -466,6 +540,16 @@ public class ApiDumper {
     private static String inferDataType(String value) {
         if (value == null || value.isEmpty()) {
             return "string";
+        }
+        
+        // Check for GUID/UUID (with or without hyphens, case-insensitive)
+        // Standard format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        // Compact format: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+        if (value.matches("(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) {
+            return "guid";
+        }
+        if (value.matches("(?i)[0-9a-f]{32}")) {
+            return "guid";
         }
         
         // Check for boolean
@@ -511,8 +595,10 @@ public class ApiDumper {
     private static class PropertyInfo {
         int count = 0;
         Map<String, Object> typeExamples = new LinkedHashMap<>();
+        Map<String, Integer> typeCounts = new LinkedHashMap<>();
         Set<String> distinctValues = new HashSet<>();
         Map<String, Set<String>> inferredTypesSet = new LinkedHashMap<>();
+        Map<String, Map<String, Integer>> inferredTypeCounts = new LinkedHashMap<>();
         Map<String, Map<String, String>> minValues = new LinkedHashMap<>();
         Map<String, Map<String, String>> maxValues = new LinkedHashMap<>();
     }
