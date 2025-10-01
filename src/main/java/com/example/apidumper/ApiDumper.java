@@ -49,7 +49,8 @@ public class ApiDumper {
             
             if (generateJsonFile != null && !generateJsonFile.trim().isEmpty()) {
                 // Generate JSON from schema file - standalone mode
-                generateJsonFromSchema(generateJsonFile);
+                String ruleName = cmd.getOptionValue("rule");
+                generateJsonFromSchema(generateJsonFile, ruleName);
             } else {
                 // Normal API call mode - URL is required
                 String url = cmd.getOptionValue("url");
@@ -120,6 +121,13 @@ public class ApiDumper {
                 .desc("Generate JSON data from a schema report file based on configurable rules")
                 .build();
         
+        Option ruleOption = Option.builder("r")
+                .longOpt("rule")
+                .hasArg()
+                .argName("RULE_NAME")
+                .desc("Specify which rule to use for JSON generation (default: generate-from-example)")
+                .build();
+        
         options.addOption(urlOption);
         options.addOption(helpOption);
         options.addOption(schemaOption);
@@ -127,6 +135,7 @@ public class ApiDumper {
         options.addOption(distinctValuesOption);
         options.addOption(reportFileOption);
         options.addOption(generateJsonOption);
+        options.addOption(ruleOption);
         
         return options;
     }
@@ -650,7 +659,7 @@ public class ApiDumper {
     }
     
     // Methods for JSON generation from schema
-    private static void generateJsonFromSchema(String schemaFile) {
+    private static void generateJsonFromSchema(String schemaFile, String ruleName) {
         try {
             // Read schema report
             String schemaJson = readFile(schemaFile);
@@ -659,22 +668,27 @@ public class ApiDumper {
             // Read configuration
             Map<String, RuleConfig> rules = readConfig("apidumper.config");
             
-            // Apply default rule (generate-from-example)
-            String ruleName = "generate-from-example";
-            if (!rules.containsKey(ruleName)) {
-                System.err.println("Error: Rule '" + ruleName + "' not found in configuration");
-                System.err.println("Available rules: " + String.join(", ", rules.keySet()));
-                System.exit(1);
-            }
-            
-            RuleConfig rule = rules.get(ruleName);
-            JsonObject result = applyRule(schemaReport, rule);
-            
             // Output result
-            Gson gson = new GsonBuilder().setPrettyPrinting().create();
-            System.out.println(ruleName);
-            System.out.println();
-            System.out.println(gson.toJson(result));
+            Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
+            
+            if (ruleName != null && !ruleName.trim().isEmpty()) {
+                // Apply specified rule
+                if (!rules.containsKey(ruleName)) {
+                    System.err.println("Error: Rule '" + ruleName + "' not found in configuration");
+                    System.err.println("Available rules: " + String.join(", ", rules.keySet()));
+                    System.exit(1);
+                }
+                
+                RuleConfig rule = rules.get(ruleName);
+                executeRule(schemaReport, rule, ruleName, gson);
+            } else {
+                // Execute all rules
+                for (Map.Entry<String, RuleConfig> entry : rules.entrySet()) {
+                    String currentRuleName = entry.getKey();
+                    RuleConfig rule = entry.getValue();
+                    executeRule(schemaReport, rule, currentRuleName, gson);
+                }
+            }
             
         } catch (IOException e) {
             System.err.println("Error reading schema file: " + e.getMessage());
@@ -683,6 +697,22 @@ public class ApiDumper {
             System.err.println("Error generating JSON: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
+        }
+    }
+    
+    private static void executeRule(SchemaReport schemaReport, RuleConfig rule, String ruleName, Gson gson) {
+        if ("missing-properties".equals(rule.type.toLowerCase())) {
+            // Special handling for missing-properties rule
+            generateMissingPropertiesOutput(schemaReport, gson);
+        } else if ("nullvalues".equals(rule.type.toLowerCase())) {
+            // Special handling for nullValues rule
+            generateNullValuesOutput(schemaReport, gson);
+        } else {
+            // Standard single JSON output
+            JsonObject result = applyRule(schemaReport, rule);
+            System.out.println(ruleName);
+            System.out.println();
+            System.out.println(gson.toJson(result));
         }
     }
     
@@ -711,6 +741,18 @@ public class ApiDumper {
         generateFromExampleRule.type = "generate-from-example";
         generateFromExampleRule.description = "Generate JSON using example values from schema report";
         rules.put("generate-from-example", generateFromExampleRule);
+        
+        // Default missing-properties rule
+        RuleConfig missingPropertiesRule = new RuleConfig();
+        missingPropertiesRule.type = "missing-properties";
+        missingPropertiesRule.description = "Generate JSON examples with each property missing individually";
+        rules.put("missing-properties", missingPropertiesRule);
+        
+        // Default nullValues rule
+        RuleConfig nullValuesRule = new RuleConfig();
+        nullValuesRule.type = "nullValues";
+        nullValuesRule.description = "Generate JSON examples with each property set to null";
+        rules.put("nullValues", nullValuesRule);
         
         // Try to read config file if it exists
         File config = new File(configFile);
@@ -772,6 +814,107 @@ public class ApiDumper {
         return result;
     }
     
+    private static void generateMissingPropertiesOutput(SchemaReport schemaReport, Gson gson) {
+        for (SchemaProperty property : schemaReport.schemaReport) {
+            // Generate JSON with this property missing
+            JsonObject result = generateMissingProperties(schemaReport, property.property);
+            
+            // Output format: newline, rule.propertyName, newline, JSON
+            System.out.println();
+            System.out.println("missing-properties." + property.property);
+            System.out.println();
+            System.out.println(gson.toJson(result));
+        }
+    }
+    
+    private static void generateNullValuesOutput(SchemaReport schemaReport, Gson gson) {
+        for (SchemaProperty property : schemaReport.schemaReport) {
+            // Generate JSON with this property set to null
+            JsonObject result = generateNullValues(schemaReport, property.property);
+            
+            // Output format: newline, rule.propertyName, newline, JSON
+            System.out.println();
+            System.out.println("nullValues." + property.property);
+            System.out.println();
+            System.out.println(gson.toJson(result));
+        }
+    }
+    
+    private static JsonObject generateNullValues(SchemaReport schemaReport, String nullProperty) {
+        // First generate the complete JSON with all example values
+        JsonObject result = generateFromExample(schemaReport);
+        
+        // Then set the specific property to null
+        setPropertyToNull(result, nullProperty);
+        
+        return result;
+    }
+    
+    private static void setPropertyToNull(JsonObject obj, String propertyPath) {
+        String[] pathParts = propertyPath.split("\\.");
+        JsonObject current = obj;
+        
+        // Navigate/create nested objects
+        for (int i = 0; i < pathParts.length - 1; i++) {
+            String part = pathParts[i];
+            if (!current.has(part)) {
+                current.add(part, new JsonObject());
+            } else {
+                // Check if the existing value is already a JsonObject
+                JsonElement existingElement = current.get(part);
+                if (existingElement.isJsonObject()) {
+                    current = existingElement.getAsJsonObject();
+                } else if (existingElement.isJsonArray()) {
+                    // If it's a JsonArray, we need to navigate into the first element for nested properties
+                    JsonArray array = existingElement.getAsJsonArray();
+                    
+                    // Ensure the array has at least one element
+                    if (array.size() == 0) {
+                        // Add an empty object to the array
+                        JsonObject emptyObject = new JsonObject();
+                        array.add(emptyObject);
+                    }
+                    
+                    // Navigate into the first element of the array
+                    JsonElement firstElement = array.get(0);
+                    if (firstElement.isJsonObject()) {
+                        current = firstElement.getAsJsonObject();
+                    } else {
+                        // If the first element is not an object, replace it with an object
+                        JsonObject newObject = new JsonObject();
+                        array.set(0, newObject);
+                        current = newObject;
+                    }
+                } else {
+                    // If it's not a JsonObject or JsonArray, replace it with a new JsonObject
+                    current.add(part, new JsonObject());
+                    current = current.getAsJsonObject(part);
+                }
+            }
+        }
+        
+        // Set the final value to null
+        String finalProperty = pathParts[pathParts.length - 1];
+        // Remove existing property if it exists, then add null
+        if (current.has(finalProperty)) {
+            current.remove(finalProperty);
+        }
+        current.add(finalProperty, JsonNull.INSTANCE);
+    }
+    
+    private static JsonObject generateMissingProperties(SchemaReport schemaReport, String excludedProperty) {
+        JsonObject result = new JsonObject();
+        
+        for (SchemaProperty property : schemaReport.schemaReport) {
+            // Skip the excluded property
+            if (!property.property.equals(excludedProperty)) {
+                setPropertyValue(result, property.property, property);
+            }
+        }
+        
+        return result;
+    }
+    
     private static void setPropertyValue(JsonObject obj, String propertyPath, SchemaProperty property) {
         String[] pathParts = propertyPath.split("\\.");
         JsonObject current = obj;
@@ -819,6 +962,55 @@ public class ApiDumper {
         String finalProperty = pathParts[pathParts.length - 1];
         JsonElement value = getExampleValue(property);
         current.add(finalProperty, value);
+    }
+    
+    private static void setPropertyValue(JsonObject obj, String propertyPath, Object value) {
+        String[] pathParts = propertyPath.split("\\.");
+        JsonObject current = obj;
+        
+        // Navigate/create nested objects
+        for (int i = 0; i < pathParts.length - 1; i++) {
+            String part = pathParts[i];
+            if (!current.has(part)) {
+                current.add(part, new JsonObject());
+            } else {
+                // Check if the existing value is already a JsonObject
+                JsonElement existingElement = current.get(part);
+                if (existingElement.isJsonObject()) {
+                    current = existingElement.getAsJsonObject();
+                } else if (existingElement.isJsonArray()) {
+                    // If it's a JsonArray, we need to navigate into the first element for nested properties
+                    JsonArray array = existingElement.getAsJsonArray();
+                    
+                    // Ensure the array has at least one element
+                    if (array.size() == 0) {
+                        // Add an empty object to the array
+                        JsonObject emptyObject = new JsonObject();
+                        array.add(emptyObject);
+                    }
+                    
+                    // Navigate into the first element of the array
+                    JsonElement firstElement = array.get(0);
+                    if (firstElement.isJsonObject()) {
+                        current = firstElement.getAsJsonObject();
+                    } else {
+                        // If the first element is not an object, replace it with an object
+                        JsonObject newObject = new JsonObject();
+                        array.set(0, newObject);
+                        current = newObject;
+                    }
+                } else {
+                    // If it's not a JsonObject or JsonArray, replace it with a new JsonObject
+                    current.add(part, new JsonObject());
+                    current = current.getAsJsonObject(part);
+                }
+            }
+        }
+        
+        // Set the final value
+        String finalProperty = pathParts[pathParts.length - 1];
+        JsonElement jsonValue = convertObjectToJsonElement(value);
+        current.add(finalProperty, jsonValue);
     }
     
     private static JsonElement getExampleValue(SchemaProperty property) {

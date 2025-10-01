@@ -73,6 +73,7 @@ java -jar target/apidumper-1.0.0.jar --generateJson schema-report.json
 - `--dumpDistinctValues` or `-d`: Comma-separated list of property names to show all distinct values as JSON arrays (optional, requires `--dumpSchemaReport`)
 - `--reportFile` or `-f`: Write the schema report to the specified file instead of console (optional, requires `--dumpSchemaReport`)
 - `--generateJson` or `-g`: Generate JSON data from a schema report file based on configurable rules (standalone mode, alternative to API mode)
+- `--rule` or `-r`: Specify which rule to use for JSON generation (if not specified, all rules are executed)
 - `--help` or `-h`: Display help message
 
 ## Features
@@ -530,6 +531,183 @@ java -jar target/apidumper-1.0.0.jar --url "https://api.example.com/data" --dump
 ```bash
 java -jar target/apidumper-1.0.0.jar --generateJson schema.json > sample-data.json
 ```
+
+#### Missing Properties Rule
+
+The `missing-properties` rule generates multiple JSON examples, each with one property missing:
+
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema.json --rule missing-properties
+```
+
+**Output Format:**
+- Each JSON example is preceded by a newline
+- Rule name followed by a period and the missing property name
+- Another newline
+- The generated JSON
+
+**Example Output:**
+```
+missing-properties.user.name
+
+{
+  "user": {
+    "age": 25,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+missing-properties.user.age
+
+{
+  "user": {
+    "name": "John Doe",
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+missing-properties.user.hobbies
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 25
+  }
+}
+```
+
+This rule is useful for testing API endpoints to ensure they handle missing properties gracefully.
+
+#### Null Values Rule
+
+The `nullValues` rule generates multiple JSON examples, each with one property set to null:
+
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema.json --rule nullValues
+```
+
+**Output Format:**
+- Each JSON example is preceded by a newline
+- Rule name followed by a period and the property name set to null
+- Another newline
+- The generated JSON
+
+**Example Output:**
+```
+nullValues.user.name
+
+{
+  "user": {
+    "name": null,
+    "age": 25,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+nullValues.user.age
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": null,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+nullValues.user.hobbies
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 25,
+    "hobbies": null
+  }
+}
+```
+
+This rule is useful for testing API endpoints to ensure they handle null values gracefully.
+
+#### Executing All Rules
+
+When no `--rule` is specified, all available rules in the configuration file are executed:
+
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema.json
+```
+
+**Output:** All rules will be executed in the order they appear in the configuration file, producing output for each rule.
+
+**Example Output:**
+```
+generate-from-example
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 25,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+missing-properties.user.name
+
+{
+  "user": {
+    "age": 25,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+missing-properties.user.age
+
+{
+  "user": {
+    "name": "John Doe",
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+missing-properties.user.hobbies
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 25
+  }
+}
+
+nullValues.user.name
+
+{
+  "user": {
+    "name": null,
+    "age": 25,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+nullValues.user.age
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": null,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+nullValues.user.hobbies
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 25,
+    "hobbies": null
+  }
+}
+```
+
+This is useful for generating comprehensive test data sets with multiple variations.
 
 ## Error Handling
 
