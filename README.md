@@ -680,6 +680,63 @@ emptyValues.profile
 
 This rule is useful for testing API endpoints to ensure they handle empty values gracefully.
 
+#### Min/Max Values Rule
+
+The `minmaxvalue` rule generates multiple JSON examples using the minimum and maximum values from the schema report:
+
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema.json --rule minmaxvalue
+```
+
+**Output Format:**
+- Each JSON example is preceded by a newline
+- Rule name followed by a period, then "min" or "max", then a period, then the property name
+- Another newline
+- The generated JSON
+
+**Example Output:**
+```
+minmaxvalue.min.age
+
+{
+  "age": 18,
+  "name": "John Doe",
+  "score": 85.5,
+  "active": true
+}
+
+minmaxvalue.max.age
+
+{
+  "age": 65,
+  "name": "John Doe",
+  "score": 85.5,
+  "active": true
+}
+
+minmaxvalue.min.score
+
+{
+  "age": 25,
+  "name": "John Doe",
+  "score": 0.0,
+  "active": true
+}
+
+minmaxvalue.max.score
+
+{
+  "age": 25,
+  "name": "John Doe",
+  "score": 100.0,
+  "active": true
+}
+```
+
+**Note:** Only properties that have min/max values in the schema report are processed by this rule.
+
+This rule is useful for testing API endpoints with boundary values and edge cases.
+
 #### Executing All Rules
 
 When no `--rule` is specified, all available rules in the configuration file are executed:
@@ -776,6 +833,26 @@ emptyValues.user.hobbies
     "name": "John Doe",
     "age": 25,
     "hobbies": []
+  }
+}
+
+minmaxvalue.min.user.age
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 18,
+    "hobbies": ["reading", "swimming", "coding"]
+  }
+}
+
+minmaxvalue.max.user.age
+
+{
+  "user": {
+    "name": "John Doe",
+    "age": 65,
+    "hobbies": ["reading", "swimming", "coding"]
   }
 }
 ```
