@@ -54,6 +54,7 @@ java -jar target/apidumper-1.0.0.jar --url "https://api.example.com/data"
 - `--url` or `-u`: The URL of the REST API endpoint to call (required)
 - `--dumpSchemaReport` or `-s`: Generate a detailed schema report analyzing the JSON response structure (optional)
 - `--noDataDump` or `-n`: Suppress output of the response body to console (optional)
+- `--dumpDistinctValues` or `-d`: Comma-separated list of property names to show all distinct values as JSON arrays (optional, requires `--dumpSchemaReport`)
 - `--help` or `-h`: Display help message
 
 ## Features
@@ -69,6 +70,8 @@ java -jar target/apidumper-1.0.0.jar --url "https://api.example.com/data"
   - Example values for each data type
   - Inferred data types for string properties (detects integer, float, boolean, date, time, datetime)
   - Shows comma-separated list when a property contains multiple inferred types
+  - Min and max values for each inferred data type
+  - Optional distinct values dump for specified properties (as JSON arrays)
 - Includes comprehensive error handling for various HTTP and network errors
 - Uses Apache HttpClient 4.5.14 for HTTP client functionality (Java 8 compatible)
 - Proper resource cleanup with EntityUtils
@@ -138,6 +141,7 @@ Property: amiibo.character
 Property: amiibo.type
   Count: 800
   Distinct Values: 2
+  Distinct Values Array: ["Card","Figure"]
   Data Types:
     - string
       Example: "Card"
@@ -150,6 +154,8 @@ Property: amiibo.release.au
     - string
       Example: "2016-11-10"
       Inferred Type: date
+      Min Value: date: "2015-01-22"
+      Max Value: date: "2021-11-05"
     - null
       Example: null
 
@@ -168,6 +174,8 @@ Property: mixedField
     - string
       Example: "123"
       Inferred Type: integer, date, string
+      Min Value: integer: "1", date: "2020-01-01", string: "apple"
+      Max Value: integer: "999", date: "2024-12-31", string: "zebra"
 
 ... (additional properties)
 
@@ -212,8 +220,47 @@ Property: amiibo.release.au
     - string
       Example: "2016-11-10"
       Inferred Type: date
+      Min Value: date: "2015-01-22"
+      Max Value: date: "2021-11-05"
 
 ... (all properties shown without the response body)
+
+================================================================================
+```
+
+### With Distinct Values Dump
+
+```bash
+java -jar target/apidumper-1.0.0.jar --url "https://www.amiiboapi.com/api/amiibo/" --dumpSchemaReport --noDataDump --dumpDistinctValues "amiibo.type,amiibo.gameSeries"
+```
+
+```
+Calling API: https://www.amiiboapi.com/api/amiibo/
+--------------------------------------------------
+Status Code: 200
+Reason Phrase: OK
+
+
+Schema Report:
+================================================================================
+
+Property: amiibo.type
+  Count: 800
+  Distinct Values: 2
+  Distinct Values Array: ["Card","Figure"]
+  Data Types:
+    - string
+      Example: "Card"
+      Inferred Type: string
+
+Property: amiibo.gameSeries
+  Count: 800
+  Distinct Values: 35
+  Distinct Values Array: ["Animal Crossing","Chibi-Robo!","Darkstalkers","Diablo","Fire Emblem","Kirby","Mario Sports Superstars","Mega Man","Metroid","Mii","Monster Hunter Stories","Pikmin","Pokémon","Shovel Knight","Splatoon","Star Fox","Super Mario","Super Smash Bros.","The Legend of Zelda","Xenoblade Chronicles","Yo-kai Watch","Yoshi"]
+  Data Types:
+    - string
+      Example: "Animal Crossing"
+      Inferred Type: string
 
 ================================================================================
 ```

@@ -49,8 +49,9 @@ public class ApiDumper {
             
             boolean dumpSchemaReport = cmd.hasOption("dumpSchemaReport");
             boolean noDataDump = cmd.hasOption("noDataDump");
+            String dumpDistinctValues = cmd.getOptionValue("dumpDistinctValues", "");
             
-            callApiAndOutputResponse(url, dumpSchemaReport, noDataDump);
+            callApiAndOutputResponse(url, dumpSchemaReport, noDataDump, dumpDistinctValues);
             
         } catch (ParseException e) {
             System.err.println("Error parsing command line arguments: " + e.getMessage());
@@ -85,10 +86,18 @@ public class ApiDumper {
                 .desc("Suppress output of the response body to console")
                 .build();
         
+        Option distinctValuesOption = Option.builder("d")
+                .longOpt("dumpDistinctValues")
+                .hasArg()
+                .argName("PROPERTIES")
+                .desc("Comma-separated list of property names to dump distinct values for")
+                .build();
+        
         options.addOption(urlOption);
         options.addOption(helpOption);
         options.addOption(schemaOption);
         options.addOption(noDataDumpOption);
+        options.addOption(distinctValuesOption);
         
         return options;
     }
@@ -101,7 +110,7 @@ public class ApiDumper {
                 "Example: java -jar apidumper.jar --url https://api.example.com/data");
     }
     
-    private static void callApiAndOutputResponse(String url, boolean dumpSchemaReport, boolean noDataDump) {
+    private static void callApiAndOutputResponse(String url, boolean dumpSchemaReport, boolean noDataDump, String dumpDistinctValues) {
         HttpClient client = HttpClients.createDefault();
         HttpGet request = new HttpGet(url);
         
@@ -135,7 +144,7 @@ public class ApiDumper {
             if (dumpSchemaReport) {
                 System.out.println();
                 System.out.println();
-                generateSchemaReport(responseBody);
+                generateSchemaReport(responseBody, dumpDistinctValues);
             }
             
         } catch (IOException e) {
@@ -147,7 +156,7 @@ public class ApiDumper {
         }
     }
     
-    private static void generateSchemaReport(String jsonResponse) {
+    private static void generateSchemaReport(String jsonResponse, String dumpDistinctValues) {
         try {
             System.out.println("Schema Report:");
             System.out.println(repeat("=", 80));
@@ -157,13 +166,29 @@ public class ApiDumper {
             Map<String, PropertyInfo> propertyMap = new LinkedHashMap<>();
             analyzeJsonElement(element, "", propertyMap);
             
+            // Parse the properties to dump distinct values for
+            Set<String> distinctValueProps = new HashSet<>();
+            if (dumpDistinctValues != null && !dumpDistinctValues.trim().isEmpty()) {
+                String[] props = dumpDistinctValues.split(",");
+                for (String prop : props) {
+                    distinctValueProps.add(prop.trim());
+                }
+            }
+            
             // Print the report
             for (Map.Entry<String, PropertyInfo> entry : propertyMap.entrySet()) {
                 PropertyInfo info = entry.getValue();
+                String propertyName = entry.getKey();
                 System.out.println();
-                System.out.println("Property: " + entry.getKey());
+                System.out.println("Property: " + propertyName);
                 System.out.println("  Count: " + info.count);
                 System.out.println("  Distinct Values: " + info.distinctValues.size());
+                
+                // Show distinct values array if requested for this property
+                if (distinctValueProps.contains(propertyName)) {
+                    System.out.println("  Distinct Values Array: " + formatDistinctValuesAsJson(info.distinctValues));
+                }
+                
                 System.out.println("  Data Types:");
                 
                 for (Map.Entry<String, Object> typeEntry : info.typeExamples.entrySet()) {
@@ -176,6 +201,14 @@ public class ApiDumper {
                         Set<String> inferredTypes = info.inferredTypesSet.get(dataType);
                         String inferredTypesList = String.join(", ", inferredTypes);
                         System.out.println("      Inferred Type: " + inferredTypesList);
+                        
+                        // Show min/max values for each inferred type
+                        if (info.minValues.containsKey(dataType)) {
+                            System.out.println("      Min Value: " + formatMinMaxValues(info.minValues.get(dataType)));
+                        }
+                        if (info.maxValues.containsKey(dataType)) {
+                            System.out.println("      Max Value: " + formatMinMaxValues(info.maxValues.get(dataType)));
+                        }
                     }
                 }
             }
@@ -237,6 +270,16 @@ public class ApiDumper {
                 info.inferredTypesSet.put(dataType, new LinkedHashSet<>());
             }
             info.inferredTypesSet.get(dataType).add(inferredType);
+            
+            // Track min/max values for each inferred type
+            if (!info.minValues.containsKey(dataType)) {
+                info.minValues.put(dataType, new LinkedHashMap<>());
+            }
+            if (!info.maxValues.containsKey(dataType)) {
+                info.maxValues.put(dataType, new LinkedHashMap<>());
+            }
+            
+            updateMinMaxValues(info.minValues.get(dataType), info.maxValues.get(dataType), inferredType, strValue);
         }
     }
     
@@ -291,6 +334,120 @@ public class ApiDumper {
             return "\"" + str + "\"";
         }
         return example.toString();
+    }
+    
+    private static String formatDistinctValuesAsJson(Set<String> distinctValues) {
+        Gson gson = new Gson();
+        // Convert set to sorted list for consistent output
+        List<String> sortedValues = new ArrayList<>(distinctValues);
+        Collections.sort(sortedValues);
+        return gson.toJson(sortedValues);
+    }
+    
+    private static void updateMinMaxValues(Map<String, String> minMap, Map<String, String> maxMap, String inferredType, String value) {
+        // Update min/max based on inferred type
+        switch (inferredType) {
+            case "integer":
+                try {
+                    long longValue = Long.parseLong(value);
+                    if (!minMap.containsKey(inferredType)) {
+                        minMap.put(inferredType, value);
+                        maxMap.put(inferredType, value);
+                    } else {
+                        long currentMin = Long.parseLong(minMap.get(inferredType));
+                        long currentMax = Long.parseLong(maxMap.get(inferredType));
+                        if (longValue < currentMin) {
+                            minMap.put(inferredType, value);
+                        }
+                        if (longValue > currentMax) {
+                            maxMap.put(inferredType, value);
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Skip if parsing fails
+                }
+                break;
+                
+            case "float":
+                try {
+                    double doubleValue = Double.parseDouble(value);
+                    if (!minMap.containsKey(inferredType)) {
+                        minMap.put(inferredType, value);
+                        maxMap.put(inferredType, value);
+                    } else {
+                        double currentMin = Double.parseDouble(minMap.get(inferredType));
+                        double currentMax = Double.parseDouble(maxMap.get(inferredType));
+                        if (doubleValue < currentMin) {
+                            minMap.put(inferredType, value);
+                        }
+                        if (doubleValue > currentMax) {
+                            maxMap.put(inferredType, value);
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Skip if parsing fails
+                }
+                break;
+                
+            case "date":
+            case "datetime":
+            case "time":
+                // For date/time types, compare lexicographically (works for ISO 8601)
+                if (!minMap.containsKey(inferredType)) {
+                    minMap.put(inferredType, value);
+                    maxMap.put(inferredType, value);
+                } else {
+                    String currentMin = minMap.get(inferredType);
+                    String currentMax = maxMap.get(inferredType);
+                    if (value.compareTo(currentMin) < 0) {
+                        minMap.put(inferredType, value);
+                    }
+                    if (value.compareTo(currentMax) > 0) {
+                        maxMap.put(inferredType, value);
+                    }
+                }
+                break;
+                
+            case "string":
+                // For strings, compare lexicographically
+                if (!minMap.containsKey(inferredType)) {
+                    minMap.put(inferredType, value);
+                    maxMap.put(inferredType, value);
+                } else {
+                    String currentMin = minMap.get(inferredType);
+                    String currentMax = maxMap.get(inferredType);
+                    if (value.compareTo(currentMin) < 0) {
+                        minMap.put(inferredType, value);
+                    }
+                    if (value.compareTo(currentMax) > 0) {
+                        maxMap.put(inferredType, value);
+                    }
+                }
+                break;
+                
+            case "boolean":
+                // For boolean, min is false, max is true
+                if (!minMap.containsKey(inferredType)) {
+                    minMap.put(inferredType, value);
+                    maxMap.put(inferredType, value);
+                } else {
+                    if (value.equalsIgnoreCase("false")) {
+                        minMap.put(inferredType, value);
+                    }
+                    if (value.equalsIgnoreCase("true")) {
+                        maxMap.put(inferredType, value);
+                    }
+                }
+                break;
+        }
+    }
+    
+    private static String formatMinMaxValues(Map<String, String> valueMap) {
+        List<String> formattedValues = new ArrayList<>();
+        for (Map.Entry<String, String> entry : valueMap.entrySet()) {
+            formattedValues.add(entry.getKey() + ": \"" + entry.getValue() + "\"");
+        }
+        return String.join(", ", formattedValues);
     }
     
     private static String getValueAsString(JsonElement element) {
@@ -356,6 +513,8 @@ public class ApiDumper {
         Map<String, Object> typeExamples = new LinkedHashMap<>();
         Set<String> distinctValues = new HashSet<>();
         Map<String, Set<String>> inferredTypesSet = new LinkedHashMap<>();
+        Map<String, Map<String, String>> minValues = new LinkedHashMap<>();
+        Map<String, Map<String, String>> maxValues = new LinkedHashMap<>();
     }
 }
 

@@ -16,7 +16,7 @@
             "request": "launch",
             "mainClass": "com.example.apidumper.ApiDumper",
             "projectName": "apidumper",
-            "args": "--url https://www.amiiboapi.com/api/amiibo/ --dumpSchemaReport --noDataDump"
+            "args": "--url https://www.amiiboapi.com/api/amiibo/ --dumpSchemaReport --noDataDump --dumpDistinctValues \"amiibo.type,amiibo.gameSeries\""
         }
     ]
 }
