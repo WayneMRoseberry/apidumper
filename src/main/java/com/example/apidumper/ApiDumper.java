@@ -707,6 +707,9 @@ public class ApiDumper {
         } else if ("nullvalues".equals(rule.type.toLowerCase())) {
             // Special handling for nullValues rule
             generateNullValuesOutput(schemaReport, gson);
+        } else if ("emptyvalues".equals(rule.type.toLowerCase())) {
+            // Special handling for emptyValues rule
+            generateEmptyValuesOutput(schemaReport, gson);
         } else {
             // Standard single JSON output
             JsonObject result = applyRule(schemaReport, rule);
@@ -753,6 +756,12 @@ public class ApiDumper {
         nullValuesRule.type = "nullValues";
         nullValuesRule.description = "Generate JSON examples with each property set to null";
         rules.put("nullValues", nullValuesRule);
+        
+        // Default emptyValues rule
+        RuleConfig emptyValuesRule = new RuleConfig();
+        emptyValuesRule.type = "emptyValues";
+        emptyValuesRule.description = "Generate JSON examples with each property set to empty";
+        rules.put("emptyValues", emptyValuesRule);
         
         // Try to read config file if it exists
         File config = new File(configFile);
@@ -900,6 +909,130 @@ public class ApiDumper {
             current.remove(finalProperty);
         }
         current.add(finalProperty, JsonNull.INSTANCE);
+    }
+    
+    private static void generateEmptyValuesOutput(SchemaReport schemaReport, Gson gson) {
+        for (SchemaProperty property : schemaReport.schemaReport) {
+            // Check if this property can be empty
+            if (canBeEmpty(property)) {
+                // Generate JSON with this property set to empty
+                JsonObject result = generateEmptyValues(schemaReport, property.property);
+                
+                // Output format: newline, rule.propertyName, newline, JSON
+                System.out.println();
+                System.out.println("emptyValues." + property.property);
+                System.out.println();
+                System.out.println(gson.toJson(result));
+            }
+        }
+    }
+    
+    private static boolean canBeEmpty(SchemaProperty property) {
+        if (property.dataTypes.isEmpty()) {
+            return false;
+        }
+        
+        // Check if any data type can be empty
+        for (DataTypeInfo dataType : property.dataTypes) {
+            String type = dataType.type.toLowerCase();
+            if ("array".equals(type) || "string".equals(type) || "object".equals(type)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private static JsonObject generateEmptyValues(SchemaReport schemaReport, String emptyProperty) {
+        // First generate the complete JSON with all example values
+        JsonObject result = generateFromExample(schemaReport);
+        
+        // Then set the specific property to empty
+        setPropertyToEmpty(result, emptyProperty, schemaReport);
+        
+        return result;
+    }
+    
+    private static void setPropertyToEmpty(JsonObject obj, String propertyPath, SchemaReport schemaReport) {
+        String[] pathParts = propertyPath.split("\\.");
+        JsonObject current = obj;
+        
+        // Navigate/create nested objects
+        for (int i = 0; i < pathParts.length - 1; i++) {
+            String part = pathParts[i];
+            if (!current.has(part)) {
+                current.add(part, new JsonObject());
+            } else {
+                // Check if the existing value is already a JsonObject
+                JsonElement existingElement = current.get(part);
+                if (existingElement.isJsonObject()) {
+                    current = existingElement.getAsJsonObject();
+                } else if (existingElement.isJsonArray()) {
+                    // If it's a JsonArray, we need to navigate into the first element for nested properties
+                    JsonArray array = existingElement.getAsJsonArray();
+                    
+                    // Ensure the array has at least one element
+                    if (array.size() == 0) {
+                        // Add an empty object to the array
+                        JsonObject emptyObject = new JsonObject();
+                        array.add(emptyObject);
+                    }
+                    
+                    // Navigate into the first element of the array
+                    JsonElement firstElement = array.get(0);
+                    if (firstElement.isJsonObject()) {
+                        current = firstElement.getAsJsonObject();
+                    } else {
+                        // If the first element is not an object, replace it with an object
+                        JsonObject newObject = new JsonObject();
+                        array.set(0, newObject);
+                        current = newObject;
+                    }
+                } else {
+                    // If it's not a JsonObject or JsonArray, replace it with a new JsonObject
+                    current.add(part, new JsonObject());
+                    current = current.getAsJsonObject(part);
+                }
+            }
+        }
+        
+        // Set the final value to empty based on the property's data type
+        String finalProperty = pathParts[pathParts.length - 1];
+        JsonElement emptyValue = getEmptyValueForProperty(propertyPath, schemaReport);
+        
+        // Remove existing property if it exists, then add empty value
+        if (current.has(finalProperty)) {
+            current.remove(finalProperty);
+        }
+        current.add(finalProperty, emptyValue);
+    }
+    
+    private static JsonElement getEmptyValueForProperty(String propertyPath, SchemaReport schemaReport) {
+        // Find the property in the schema report
+        for (SchemaProperty property : schemaReport.schemaReport) {
+            if (property.property.equals(propertyPath)) {
+                if (property.dataTypes.isEmpty()) {
+                    return JsonNull.INSTANCE;
+                }
+                
+                // Use the first data type to determine empty value
+                DataTypeInfo dataType = property.dataTypes.get(0);
+                String type = dataType.type.toLowerCase();
+                
+                switch (type) {
+                    case "array":
+                        return new JsonArray(); // Empty array
+                    case "string":
+                        return new JsonPrimitive(""); // Empty string
+                    case "object":
+                        return new JsonObject(); // Empty object
+                    default:
+                        return JsonNull.INSTANCE; // For other types, use null
+                }
+            }
+        }
+        
+        return JsonNull.INSTANCE;
     }
     
     private static JsonObject generateMissingProperties(SchemaReport schemaReport, String excludedProperty) {
