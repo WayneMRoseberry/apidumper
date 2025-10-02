@@ -320,6 +320,13 @@
       "property": "amiibo.type",
       "count": 889,
       "distinctValues": 5,
+      "distinctValuesArray": [
+        "Band",
+        "Block",
+        "Card",
+        "Figure",
+        "Yarn"
+      ],
       "dataTypes": [
         {
           "type": "string",

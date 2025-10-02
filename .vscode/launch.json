@@ -26,7 +26,7 @@
             "request": "launch",
             "mainClass": "com.example.apidumper.ApiDumper",
             "projectName": "apidumper",
-            "args": "--url https://www.amiiboapi.com/api/amiibo/ --dumpSchemaReport --noDataDump --reportFile schema-report.json"
+            "args": "--url https://www.amiiboapi.com/api/amiibo/ --dumpSchemaReport --noDataDump --reportFile schema-report.json --dumpDistinctValues amiibo.type"
         },
         {
             "type": "java",
