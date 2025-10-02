@@ -459,8 +459,13 @@ The configuration file defines rules for data generation:
 # Comments start with #
 ruleName=ruleType:description
 
-# Example:
+# Available rules:
 generate-from-example=generate-from-example:Generate JSON using example values from schema report
+missing-properties=missing-properties:Generate JSON examples with each property missing individually
+nullValues=nullValues:Generate JSON examples with each property set to null
+emptyValues=emptyValues:Generate JSON examples with each property set to empty (empty arrays, empty strings, empty objects)
+minmaxvalue=minmaxvalue:Generate JSON examples using minimum and maximum values from schema report
+distinctValues=distinctValues:Generate JSON examples using each distinct value for each property
 ```
 
 #### Default Rule: generate-from-example
@@ -736,6 +741,63 @@ minmaxvalue.max.score
 **Note:** Only properties that have min/max values in the schema report are processed by this rule.
 
 This rule is useful for testing API endpoints with boundary values and edge cases.
+
+#### Distinct Values Rule
+
+The `distinctValues` rule generates multiple JSON examples using each distinct value for each property that has distinct values available:
+
+```bash
+java -jar target/apidumper-1.0.0.jar --generateJson schema.json --rule distinctValues
+```
+
+**Output Format:**
+- Each JSON example is preceded by a newline
+- Rule name followed by a period, then the property name, then a period, then the distinct value
+- Another newline
+- The generated JSON
+
+**Example Output:**
+```
+distinctValues.userId.1
+
+{
+  "userId": "1",
+  "id": 1.0,
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+}
+
+distinctValues.userId.2
+
+{
+  "userId": "2",
+  "id": 1.0,
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+}
+
+distinctValues.title.sunt aut facere repellat provident occaecati excepturi optio reprehenderit
+
+{
+  "userId": 1.0,
+  "id": 1.0,
+  "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+}
+
+distinctValues.title.qui est esse
+
+{
+  "userId": 1.0,
+  "id": 1.0,
+  "title": "qui est esse",
+  "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto"
+}
+```
+
+**Note:** Only properties that have distinct values arrays in the schema report are processed by this rule. To generate distinct values arrays, use the `--dumpDistinctValues` option when creating the schema report.
+
+This rule is useful for testing API endpoints with all possible values for each property, ensuring comprehensive coverage of the data domain.
 
 #### Executing All Rules
 

@@ -726,6 +726,9 @@ public class ApiDumper {
         } else if ("minmaxvalue".equals(rule.type.toLowerCase())) {
             // Special handling for minmaxvalue rule
             generateMinMaxValueOutput(schemaReport, gson);
+        } else if ("distinctvalues".equals(rule.type.toLowerCase())) {
+            // Special handling for distinctValues rule
+            generateDistinctValuesOutput(schemaReport, gson);
         } else {
             // Standard single JSON output
             JsonObject result = applyRule(schemaReport, rule);
@@ -784,6 +787,12 @@ public class ApiDumper {
         minmaxvalueRule.type = "minmaxvalue";
         minmaxvalueRule.description = "Generate JSON examples using minimum and maximum values from schema report";
         rules.put("minmaxvalue", minmaxvalueRule);
+        
+        // Default distinctValues rule
+        RuleConfig distinctValuesRule = new RuleConfig();
+        distinctValuesRule.type = "distinctValues";
+        distinctValuesRule.description = "Generate JSON examples using each distinct value for each property";
+        rules.put("distinctValues", distinctValuesRule);
         
         // Try to read config file if it exists
         File config = new File(configFile);
@@ -1208,6 +1217,113 @@ public class ApiDumper {
         }
         
         return JsonNull.INSTANCE;
+    }
+    
+    /**
+     * Generates output for the distinctValues rule
+     */
+    private static void generateDistinctValuesOutput(SchemaReport schemaReport, Gson gson) {
+        for (SchemaProperty property : schemaReport.schemaReport) {
+            if (hasDistinctValues(property)) {
+                generateDistinctValues(schemaReport, property.property, gson);
+            }
+        }
+    }
+    
+    /**
+     * Checks if a property has distinct values available
+     */
+    private static boolean hasDistinctValues(SchemaProperty property) {
+        return property.distinctValuesArray != null && !property.distinctValuesArray.isEmpty();
+    }
+    
+    /**
+     * Generates JSON examples for each distinct value of a property
+     */
+    private static void generateDistinctValues(SchemaReport schemaReport, String targetProperty, Gson gson) {
+        // Find the property in the schema report
+        SchemaProperty property = null;
+        for (SchemaProperty prop : schemaReport.schemaReport) {
+            if (prop.property.equals(targetProperty)) {
+                property = prop;
+                break;
+            }
+        }
+        
+        if (property == null || property.distinctValuesArray == null || property.distinctValuesArray.isEmpty()) {
+            return;
+        }
+        
+        // Generate JSON for each distinct value
+        for (String distinctValue : property.distinctValuesArray) {
+            // Generate base JSON with all example values
+            JsonObject result = generateFromExample(schemaReport);
+            
+            // Set the target property to the distinct value
+            setPropertyToDistinctValue(result, targetProperty, new JsonPrimitive(distinctValue));
+            
+            // Output the result
+            System.out.println();
+            System.out.println("distinctValues." + targetProperty + "." + distinctValue);
+            System.out.println();
+            System.out.println(gson.toJson(result));
+        }
+    }
+    
+    /**
+     * Sets a property to a specific distinct value
+     */
+    private static void setPropertyToDistinctValue(JsonObject obj, String propertyPath, JsonElement distinctValue) {
+        String[] pathParts = propertyPath.split("\\.");
+        JsonObject current = obj;
+        
+        // Navigate/create nested objects
+        for (int i = 0; i < pathParts.length - 1; i++) {
+            String part = pathParts[i];
+            if (!current.has(part)) {
+                current.add(part, new JsonObject());
+            } else {
+                // Check if the existing value is already a JsonObject
+                JsonElement existingElement = current.get(part);
+                if (existingElement.isJsonObject()) {
+                    current = existingElement.getAsJsonObject();
+                } else if (existingElement.isJsonArray()) {
+                    // If it's a JsonArray, we need to navigate into the first element for nested properties
+                    JsonArray array = existingElement.getAsJsonArray();
+                    
+                    // Ensure the array has at least one element
+                    if (array.size() == 0) {
+                        // Add an empty object to the array
+                        JsonObject emptyObject = new JsonObject();
+                        array.add(emptyObject);
+                    }
+                    
+                    // Navigate into the first element of the array
+                    JsonElement firstElement = array.get(0);
+                    if (firstElement.isJsonObject()) {
+                        current = firstElement.getAsJsonObject();
+                    } else {
+                        // If the first element is not an object, replace it with an object
+                        JsonObject newObject = new JsonObject();
+                        array.set(0, newObject);
+                        current = newObject;
+                    }
+                } else {
+                    // If it's not a JsonObject or JsonArray, replace it with a new JsonObject
+                    current.add(part, new JsonObject());
+                    current = current.getAsJsonObject(part);
+                }
+            }
+        }
+        
+        // Set the final value to the distinct value
+        String finalProperty = pathParts[pathParts.length - 1];
+        
+        // Remove existing property if it exists, then add distinct value
+        if (current.has(finalProperty)) {
+            current.remove(finalProperty);
+        }
+        current.add(finalProperty, distinctValue);
     }
     
     private static JsonObject generateMissingProperties(SchemaReport schemaReport, String excludedProperty) {
