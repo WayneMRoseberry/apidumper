@@ -2,6 +2,15 @@
 
 A Java command line tool for analyzing REST API responses.
 
+## Testing
+
+This project is intended as a target for testing exercises. There are unit tests
+in the project. There are some test data files. There is a VSCode configuration
+file with some debug configurations that reference some of the test data files.
+These represent minimal testing. All of it created by Cursor in vibe coding sessions.
+
+Clone the repository to begin your own testing exercises.
+
 ## Prerequisites
 
 - Java 8 or higher (JDK recommended for compilation)
