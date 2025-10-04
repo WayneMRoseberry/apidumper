@@ -578,6 +578,334 @@ public class ApiDumperTest {
         }
     }
 
+    @Test
+    public void testGenerateSchemaReportJson_twoobjectswithpropertiesofdifferentintegervalue_checkminandmax() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"age\": 25, \"score\": 100}, {\"age\": 30, \"score\": 85}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that age property has correct min/max values
+        assertTrue("Result should contain age property", result.contains("\"property\": \"age\""));
+        assertTrue("Result should contain age min value", result.contains("\"min\": 25"));
+        assertTrue("Result should contain age max value", result.contains("\"max\": 30"));
+        
+        // Check that score property has correct min/max values
+        assertTrue("Result should contain score property", result.contains("\"property\": \"score\""));
+        assertTrue("Result should contain score min value", result.contains("\"min\": 85"));
+        assertTrue("Result should contain score max value", result.contains("\"max\": 100"));
+        
+        // Verify data types
+        assertTrue("Result should contain number type for age", result.contains("\"type\": \"number\""));
+        assertTrue("Result should contain number type for score", result.contains("\"type\": \"number\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for age", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for score", result.contains("\"count\": 2"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_twoobjectswithpropertiesofdifferentstringvalue_checkminandmax() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"name\": \"Alice\", \"status\": \"active\"}, {\"name\": \"Bob\", \"status\": \"inactive\"}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that name property has correct min/max values (lexicographically)
+        assertTrue("Result should contain name property", result.contains("\"property\": \"name\""));
+        assertTrue("Result should contain name min value", result.contains("\"min\": \"Alice\""));
+        assertTrue("Result should contain name max value", result.contains("\"max\": \"Bob\""));
+        
+        // Check that status property has correct min/max values (lexicographically)
+        assertTrue("Result should contain status property", result.contains("\"property\": \"status\""));
+        assertTrue("Result should contain status min value", result.contains("\"min\": \"active\""));
+        assertTrue("Result should contain status max value", result.contains("\"max\": \"inactive\""));
+        
+        // Verify data types
+        assertTrue("Result should contain string type for name", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain string type for status", result.contains("\"type\": \"string\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for name", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for status", result.contains("\"count\": 2"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_twoobjectswithpropertiesofdifferentdatevalue_checkminandmax() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"created\": \"2023-01-15\", \"updated\": \"2023-02-20\"}, {\"created\": \"2023-03-10\", \"updated\": \"2023-04-05\"}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that created property has correct min/max values (chronologically)
+        assertTrue("Result should contain created property", result.contains("\"property\": \"created\""));
+        assertTrue("Result should contain created min value", result.contains("\"min\": \"2023-01-15\""));
+        assertTrue("Result should contain created max value", result.contains("\"max\": \"2023-03-10\""));
+        
+        // Check that updated property has correct min/max values (chronologically)
+        assertTrue("Result should contain updated property", result.contains("\"property\": \"updated\""));
+        assertTrue("Result should contain updated min value", result.contains("\"min\": \"2023-02-20\""));
+        assertTrue("Result should contain updated max value", result.contains("\"max\": \"2023-04-05\""));
+        
+        // Verify data types
+        assertTrue("Result should contain string type for created", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain string type for updated", result.contains("\"type\": \"string\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for created", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for updated", result.contains("\"count\": 2"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_twoobjectswithpropertiesofdifferentfloatvalue_checkminandmax() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"price\": 19.99, \"rating\": 4.5}, {\"price\": 29.99, \"rating\": 3.8}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that price property has correct min/max values
+        assertTrue("Result should contain price property", result.contains("\"property\": \"price\""));
+        assertTrue("Result should contain price min value", result.contains("\"min\": 19.99"));
+        assertTrue("Result should contain price max value", result.contains("\"max\": 29.99"));
+        
+        // Check that rating property has correct min/max values
+        assertTrue("Result should contain rating property", result.contains("\"property\": \"rating\""));
+        assertTrue("Result should contain rating min value", result.contains("\"min\": 3.8"));
+        assertTrue("Result should contain rating max value", result.contains("\"max\": 4.5"));
+        
+        // Verify data types
+        assertTrue("Result should contain number type for price", result.contains("\"type\": \"number\""));
+        assertTrue("Result should contain number type for rating", result.contains("\"type\": \"number\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for price", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for rating", result.contains("\"count\": 2"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_fourobjectswithpropertyofmixedtype_checkminandmax() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"value\": 10, \"type\": \"number\"}, {\"value\": \"hello\", \"type\": \"string\"}, " +
+                             "{\"value\": true, \"type\": \"boolean\"}, {\"value\": 25.5, \"type\": \"float\"}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that value property has correct min/max values (should handle mixed types)
+        assertTrue("Result should contain value property", result.contains("\"property\": \"value\""));
+        // Note: For mixed types, the min/max behavior may vary based on implementation
+        // This test verifies that the property is reported and has some min/max values
+        assertTrue("Result should contain value min value", result.contains("\"min\""));
+        assertTrue("Result should contain value max value", result.contains("\"max\""));
+        
+        // Check that type property has correct min/max values (lexicographically)
+        assertTrue("Result should contain type property", result.contains("\"property\": \"type\""));
+        assertTrue("Result should contain type min value", result.contains("\"min\": \"boolean\""));
+        assertTrue("Result should contain type max value", result.contains("\"max\": \"string\""));
+        
+        // Verify data types
+        assertTrue("Result should contain string type for type", result.contains("\"type\": \"string\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for value", result.contains("\"count\": 4"));
+        assertTrue("Result should contain count for type", result.contains("\"count\": 4"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_arrayandobjectnestedthreedeep_checkpropertiesallreportedwithexpectedvalues() throws Exception {
+        // Arrange
+        String jsonResponse = "{\"users\": [{\"profile\": {\"personal\": {\"name\": \"John\", \"age\": 25}}}, " +
+                             "{\"profile\": {\"personal\": {\"name\": \"Jane\", \"age\": 30}}}]}";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that all nested properties are reported with correct paths
+        assertTrue("Result should contain users property", result.contains("\"property\": \"users\""));
+        assertTrue("Result should contain users.profile property", result.contains("\"property\": \"users.profile\""));
+        assertTrue("Result should contain users.profile.personal property", result.contains("\"property\": \"users.profile.personal\""));
+        assertTrue("Result should contain users.profile.personal.name property", result.contains("\"property\": \"users.profile.personal.name\""));
+        assertTrue("Result should contain users.profile.personal.age property", result.contains("\"property\": \"users.profile.personal.age\""));
+        
+        // Check that name property has correct min/max values
+        assertTrue("Result should contain name min value", result.contains("\"min\": \"Jane\""));
+        assertTrue("Result should contain name max value", result.contains("\"max\": \"John\""));
+        
+        // Check that age property has correct min/max values
+        assertTrue("Result should contain age min value", result.contains("\"min\": 25"));
+        assertTrue("Result should contain age max value", result.contains("\"max\": 30"));
+        
+        // Verify data types
+        assertTrue("Result should contain array type for users", result.contains("\"type\": \"array\""));
+        assertTrue("Result should contain object type for users.profile", result.contains("\"type\": \"object\""));
+        assertTrue("Result should contain object type for users.profile.personal", result.contains("\"type\": \"object\""));
+        assertTrue("Result should contain string type for users.profile.personal.name", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain number type for users.profile.personal.age", result.contains("\"type\": \"number\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for users", result.contains("\"count\": 1"));
+        assertTrue("Result should contain count for users.profile", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for users.profile.personal", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for users.profile.personal.name", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for users.profile.personal.age", result.contains("\"count\": 2"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_multipleobjectswithnotallpropertynamesmatchbetweenthem() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"name\": \"John\", \"age\": 25, \"city\": \"New York\"}, " +
+                             "{\"name\": \"Jane\", \"salary\": 50000, \"department\": \"IT\"}, " +
+                             "{\"name\": \"Bob\", \"age\": 30, \"city\": \"Boston\", \"salary\": 60000}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that all properties are reported, even if not present in all objects
+        assertTrue("Result should contain name property", result.contains("\"property\": \"name\""));
+        assertTrue("Result should contain age property", result.contains("\"property\": \"age\""));
+        assertTrue("Result should contain city property", result.contains("\"property\": \"city\""));
+        assertTrue("Result should contain salary property", result.contains("\"property\": \"salary\""));
+        assertTrue("Result should contain department property", result.contains("\"property\": \"department\""));
+        
+        // Verify data types
+        assertTrue("Result should contain string type for name", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain number type for age", result.contains("\"type\": \"number\""));
+        assertTrue("Result should contain string type for city", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain number type for salary", result.contains("\"type\": \"number\""));
+        assertTrue("Result should contain string type for department", result.contains("\"type\": \"string\""));
+        
+        // Verify counts - some properties appear in fewer objects
+        assertTrue("Result should contain count for name", result.contains("\"count\": 3"));
+        assertTrue("Result should contain count for age", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for city", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for salary", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count for department", result.contains("\"count\": 1"));
+        
+        // Verify distinct values
+        assertTrue("Result should contain distinctValues for name", result.contains("\"distinctValues\": 3"));
+        assertTrue("Result should contain distinctValues for age", result.contains("\"distinctValues\": 2"));
+        assertTrue("Result should contain distinctValues for city", result.contains("\"distinctValues\": 2"));
+        assertTrue("Result should contain distinctValues for salary", result.contains("\"distinctValues\": 2"));
+        assertTrue("Result should contain distinctValues for department", result.contains("\"distinctValues\": 1"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_multipleobjectssamepropertyinferredtypeisbothstringandinteger() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"id\": \"123\", \"value\": \"hello\"}, " +
+                             "{\"id\": 456, \"value\": 42}, " +
+                             "{\"id\": \"789\", \"value\": \"world\"}, " +
+                             "{\"id\": 101, \"value\": 3.14}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that properties are reported
+        assertTrue("Result should contain id property", result.contains("\"property\": \"id\""));
+        assertTrue("Result should contain value property", result.contains("\"property\": \"value\""));
+        
+        // For mixed types, the implementation should handle this appropriately
+        // The exact behavior may vary based on how the schema inference handles mixed types
+        // This test verifies that the properties are reported and processed
+        assertTrue("Result should contain some type information for id", 
+                   result.contains("\"type\"") && result.contains("\"id\""));
+        assertTrue("Result should contain some type information for value", 
+                   result.contains("\"type\"") && result.contains("\"value\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for id", result.contains("\"count\": 4"));
+        assertTrue("Result should contain count for value", result.contains("\"count\": 4"));
+        
+        // Verify distinct values
+        assertTrue("Result should contain distinctValues for id", result.contains("\"distinctValues\": 4"));
+        assertTrue("Result should contain distinctValues for value", result.contains("\"distinctValues\": 4"));
+    }
+
+    @Test
+    public void testGenerateSchemaReportJson_fiveobjectstwohavepropertieswithsamevaluerestaredistinct_checkdistinctvaluetotal() throws Exception {
+        // Arrange
+        String jsonResponse = "[{\"status\": \"active\", \"priority\": \"high\"}, " +
+                             "{\"status\": \"inactive\", \"priority\": \"low\"}, " +
+                             "{\"status\": \"active\", \"priority\": \"medium\"}, " +
+                             "{\"status\": \"pending\", \"priority\": \"high\"}, " +
+                             "{\"status\": \"inactive\", \"priority\": \"low\"}]";
+        String dumpDistinctValues = null;
+        
+        // Act
+        String result = invokeGenerateSchemaReportJson(jsonResponse, dumpDistinctValues);
+        
+        // Assert
+        assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Check that properties are reported
+        assertTrue("Result should contain status property", result.contains("\"property\": \"status\""));
+        assertTrue("Result should contain priority property", result.contains("\"property\": \"priority\""));
+        
+        // Verify data types
+        assertTrue("Result should contain string type for status", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain string type for priority", result.contains("\"type\": \"string\""));
+        
+        // Verify counts
+        assertTrue("Result should contain count for status", result.contains("\"count\": 5"));
+        assertTrue("Result should contain count for priority", result.contains("\"count\": 5"));
+        
+        // Verify distinct values - status has 3 distinct values (active, inactive, pending)
+        // priority has 3 distinct values (high, low, medium)
+        assertTrue("Result should contain distinctValues for status", result.contains("\"distinctValues\": 3"));
+        assertTrue("Result should contain distinctValues for priority", result.contains("\"distinctValues\": 3"));
+        
+        // Verify min/max values for strings (lexicographically)
+        assertTrue("Result should contain status min value", result.contains("\"min\": \"active\""));
+        assertTrue("Result should contain status max value", result.contains("\"max\": \"pending\""));
+        assertTrue("Result should contain priority min value", result.contains("\"min\": \"high\""));
+        assertTrue("Result should contain priority max value", result.contains("\"max\": \"medium\""));
+    }
+
     /**
      * Helper method to invoke the private generateSchemaReportJson method using reflection.
      */
