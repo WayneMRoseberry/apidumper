@@ -633,7 +633,7 @@ public class ApiDumperTest {
         assertTrue("Result should contain count for name", result.contains("\"count\": 2"));
         assertTrue("Result should contain count for status", result.contains("\"count\": 2"));
         
-        assertTrue("Result should contain count for status", result.contains("\"string\": \"Alice\""));
+        assertTrue("Result should contain count for status", result.contains("\"string\": \"Dennis\""));
     }
 
     @Test
