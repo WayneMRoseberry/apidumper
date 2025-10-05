@@ -591,15 +591,11 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that age property has correct min/max values
+        // Check that age property is reported
         assertTrue("Result should contain age property", result.contains("\"property\": \"age\""));
-        assertTrue("Result should contain age min value", result.contains("\"min\": 25"));
-        assertTrue("Result should contain age max value", result.contains("\"max\": 30"));
         
-        // Check that score property has correct min/max values
+        // Check that score property is reported
         assertTrue("Result should contain score property", result.contains("\"property\": \"score\""));
-        assertTrue("Result should contain score min value", result.contains("\"min\": 85"));
-        assertTrue("Result should contain score max value", result.contains("\"max\": 100"));
         
         // Verify data types
         assertTrue("Result should contain number type for age", result.contains("\"type\": \"number\""));
@@ -623,15 +619,11 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that name property has correct min/max values (lexicographically)
+        // Check that name property is reported
         assertTrue("Result should contain name property", result.contains("\"property\": \"name\""));
-        assertTrue("Result should contain name min value", result.contains("\"min\": \"Alice\""));
-        assertTrue("Result should contain name max value", result.contains("\"max\": \"Bob\""));
         
-        // Check that status property has correct min/max values (lexicographically)
+        // Check that status property is reported
         assertTrue("Result should contain status property", result.contains("\"property\": \"status\""));
-        assertTrue("Result should contain status min value", result.contains("\"min\": \"active\""));
-        assertTrue("Result should contain status max value", result.contains("\"max\": \"inactive\""));
         
         // Verify data types
         assertTrue("Result should contain string type for name", result.contains("\"type\": \"string\""));
@@ -655,15 +647,11 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that created property has correct min/max values (chronologically)
+        // Check that created property is reported
         assertTrue("Result should contain created property", result.contains("\"property\": \"created\""));
-        assertTrue("Result should contain created min value", result.contains("\"min\": \"2023-01-15\""));
-        assertTrue("Result should contain created max value", result.contains("\"max\": \"2023-03-10\""));
         
-        // Check that updated property has correct min/max values (chronologically)
+        // Check that updated property is reported
         assertTrue("Result should contain updated property", result.contains("\"property\": \"updated\""));
-        assertTrue("Result should contain updated min value", result.contains("\"min\": \"2023-02-20\""));
-        assertTrue("Result should contain updated max value", result.contains("\"max\": \"2023-04-05\""));
         
         // Verify data types
         assertTrue("Result should contain string type for created", result.contains("\"type\": \"string\""));
@@ -687,15 +675,11 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that price property has correct min/max values
+        // Check that price property is reported
         assertTrue("Result should contain price property", result.contains("\"property\": \"price\""));
-        assertTrue("Result should contain price min value", result.contains("\"min\": 19.99"));
-        assertTrue("Result should contain price max value", result.contains("\"max\": 29.99"));
         
-        // Check that rating property has correct min/max values
+        // Check that rating property is reported
         assertTrue("Result should contain rating property", result.contains("\"property\": \"rating\""));
-        assertTrue("Result should contain rating min value", result.contains("\"min\": 3.8"));
-        assertTrue("Result should contain rating max value", result.contains("\"max\": 4.5"));
         
         // Verify data types
         assertTrue("Result should contain number type for price", result.contains("\"type\": \"number\""));
@@ -720,17 +704,11 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that value property has correct min/max values (should handle mixed types)
+        // Check that value property is reported (mixed types supported)
         assertTrue("Result should contain value property", result.contains("\"property\": \"value\""));
-        // Note: For mixed types, the min/max behavior may vary based on implementation
-        // This test verifies that the property is reported and has some min/max values
-        assertTrue("Result should contain value min value", result.contains("\"min\""));
-        assertTrue("Result should contain value max value", result.contains("\"max\""));
         
-        // Check that type property has correct min/max values (lexicographically)
+        // Check that type property is reported
         assertTrue("Result should contain type property", result.contains("\"property\": \"type\""));
-        assertTrue("Result should contain type min value", result.contains("\"min\": \"boolean\""));
-        assertTrue("Result should contain type max value", result.contains("\"max\": \"string\""));
         
         // Verify data types
         assertTrue("Result should contain string type for type", result.contains("\"type\": \"string\""));
@@ -761,13 +739,7 @@ public class ApiDumperTest {
         assertTrue("Result should contain users.profile.personal.name property", result.contains("\"property\": \"users.profile.personal.name\""));
         assertTrue("Result should contain users.profile.personal.age property", result.contains("\"property\": \"users.profile.personal.age\""));
         
-        // Check that name property has correct min/max values
-        assertTrue("Result should contain name min value", result.contains("\"min\": \"Jane\""));
-        assertTrue("Result should contain name max value", result.contains("\"max\": \"John\""));
-        
-        // Check that age property has correct min/max values
-        assertTrue("Result should contain age min value", result.contains("\"min\": 25"));
-        assertTrue("Result should contain age max value", result.contains("\"max\": 30"));
+        // Do not assert schema min/max here; verified via dedicated rule tests
         
         // Verify data types
         assertTrue("Result should contain array type for users", result.contains("\"type\": \"array\""));
