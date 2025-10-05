@@ -165,7 +165,7 @@ if [ -z "$JAVA_HOME" ] ; then
   echo "Warning: JAVA_HOME environment variable is not set."
 fi
 
-CLASSWORLDS_LAUNCHER=org.codehaus.plexus.classworlds.launcher.Launcher
+WRAPPER_MAIN_CLASS=org.apache.maven.wrapper.MavenWrapperMain
 
 # traverses directory structure from process work directory to filesystem root
 # first directory with .mvn subdirectory is considered project base directory
@@ -308,4 +308,4 @@ exec "$JAVACMD" \
   $MAVEN_DEBUG_OPTS \
   -classpath "$MAVEN_PROJECTBASEDIR/.mvn/wrapper/maven-wrapper.jar" \
   "-Dmaven.multiModuleProjectDirectory=${MAVEN_PROJECTBASEDIR}" \
-  ${CLASSWORLDS_LAUNCHER} $MAVEN_CMD_LINE_ARGS
+  ${WRAPPER_MAIN_CLASS} $MAVEN_CMD_LINE_ARGS
