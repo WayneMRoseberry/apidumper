@@ -632,6 +632,8 @@ public class ApiDumperTest {
         // Verify counts
         assertTrue("Result should contain count for name", result.contains("\"count\": 2"));
         assertTrue("Result should contain count for status", result.contains("\"count\": 2"));
+        
+        assertTrue("Result should contain count for status", result.contains("\"string\": \"Alice\""));
     }
 
     @Test
@@ -688,6 +690,7 @@ public class ApiDumperTest {
         // Verify counts
         assertTrue("Result should contain count for price", result.contains("\"count\": 2"));
         assertTrue("Result should contain count for rating", result.contains("\"count\": 2"));
+
     }
 
     @Test
@@ -716,6 +719,7 @@ public class ApiDumperTest {
         // Verify counts
         assertTrue("Result should contain count for value", result.contains("\"count\": 4"));
         assertTrue("Result should contain count for type", result.contains("\"count\": 4"));
+
     }
 
     @Test
