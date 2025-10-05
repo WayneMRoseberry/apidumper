@@ -609,7 +609,7 @@ public class ApiDumperTest {
     @Test
     public void testGenerateSchemaReportJson_twoobjectswithpropertiesofdifferentstringvalue_checkminandmax() throws Exception {
         // Arrange
-        String jsonResponse = "[{\"name\": \"Alice\", \"status\": \"active\"}, {\"name\": \"Bob\", \"status\": \"inactive\"}]";
+        String jsonResponse = "[{\"name\": \"Alice\", \"status\": \"active\"}, {\"name\": \"Bob\", \"status\": \"inactive\"}, {\"name\": \"Dennis\", \"status\": \"inactive\"}]";
         String dumpDistinctValues = null;
         
         // Act
@@ -630,8 +630,11 @@ public class ApiDumperTest {
         assertTrue("Result should contain string type for status", result.contains("\"type\": \"string\""));
         
         // Verify counts
-        assertTrue("Result should contain count for name", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for status", result.contains("\"count\": 2"));
+        assertTrue("Result should contain count 3 for name", result.contains("\"count\": 3"));
+        assertTrue("Result should contain count 3 for status", result.contains("\"count\": 3"));
+        
+        assertTrue("Result should contain Alice as a string", result.contains("\"string\": \"Alice\""));
+        assertTrue("Result should contain Dennis as a string", result.contains("\"string\": \"Dennis\""));
     }
 
     @Test
@@ -688,6 +691,7 @@ public class ApiDumperTest {
         // Verify counts
         assertTrue("Result should contain count for price", result.contains("\"count\": 2"));
         assertTrue("Result should contain count for rating", result.contains("\"count\": 2"));
+
     }
 
     @Test
@@ -716,6 +720,7 @@ public class ApiDumperTest {
         // Verify counts
         assertTrue("Result should contain count for value", result.contains("\"count\": 4"));
         assertTrue("Result should contain count for type", result.contains("\"count\": 4"));
+
     }
 
     @Test
