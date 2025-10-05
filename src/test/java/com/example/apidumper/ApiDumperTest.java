@@ -591,6 +591,12 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
         // Check that age property is reported
         assertTrue("Result should contain age property", result.contains("\"property\": \"age\""));
         
