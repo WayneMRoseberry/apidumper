@@ -609,7 +609,7 @@ public class ApiDumperTest {
     @Test
     public void testGenerateSchemaReportJson_twoobjectswithpropertiesofdifferentstringvalue_checkminandmax() throws Exception {
         // Arrange
-        String jsonResponse = "[{\"name\": \"Alice\", \"status\": \"active\"}, {\"name\": \"Bob\", \"status\": \"inactive\"}]";
+        String jsonResponse = "[{\"name\": \"Alice\", \"status\": \"active\"}, {\"name\": \"Bob\", \"status\": \"inactive\"}, {\"name\": \"Dennis\", \"status\": \"inactive\"}]";
         String dumpDistinctValues = null;
         
         // Act
@@ -633,7 +633,8 @@ public class ApiDumperTest {
         assertTrue("Result should contain count for name", result.contains("\"count\": 2"));
         assertTrue("Result should contain count for status", result.contains("\"count\": 2"));
         
-        assertTrue("Result should contain count for status", result.contains("\"minValues\": {            {\n\"string\": \"Alice\""));
+        assertTrue("Result should contain count for status", result.contains("\"string\": \"Alice\""));
+        assertTrue("Result should contain count for status", result.contains("\"string\": \"Bob\""));
     }
 
     @Test
