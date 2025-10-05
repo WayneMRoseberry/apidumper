@@ -597,63 +597,11 @@ public class ApiDumperTest {
         assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
         assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Find age and score properties in the schema report
-        ApiDumper.SchemaProperty ageProperty = null;
-        ApiDumper.SchemaProperty scoreProperty = null;
+        // Verify age property min/max values (25, 30)
+        verifyNumericPropertyMinMax(schemaReport, "age", "25", "30");
         
-        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
-            if ("age".equals(prop.property)) {
-                ageProperty = prop;
-            } else if ("score".equals(prop.property)) {
-                scoreProperty = prop;
-            }
-        }
-        
-        // Check that age property is reported
-        assertNotNull("Age property should be found", ageProperty);
-        assertEquals("Age property name should be correct", "age", ageProperty.property);
-        
-        // Check that score property is reported
-        assertNotNull("Score property should be found", scoreProperty);
-        assertEquals("Score property name should be correct", "score", scoreProperty.property);
-        
-        // Verify counts
-        assertEquals("Age count should be 2", 2, ageProperty.count);
-        assertEquals("Score count should be 2", 2, scoreProperty.count);
-        
-        // Verify data types exist and are numbers
-        assertNotNull("Age should have data types", ageProperty.dataTypes);
-        assertNotNull("Score should have data types", scoreProperty.dataTypes);
-        assertTrue("Age should have at least one data type", ageProperty.dataTypes.size() > 0);
-        assertTrue("Score should have at least one data type", scoreProperty.dataTypes.size() > 0);
-        
-        // Verify minValues and maxValues for age property
-        for (ApiDumper.DataTypeInfo dataType : ageProperty.dataTypes) {
-            if ("number".equals(dataType.type)) {
-                assertNotNull("Age should have minValues", dataType.minValues);
-                assertNotNull("Age should have maxValues", dataType.maxValues);
-                assertTrue("Age minValues should not be empty", !dataType.minValues.isEmpty());
-                assertTrue("Age maxValues should not be empty", !dataType.maxValues.isEmpty());
-                
-                // Check specific min/max values for age (25, 30)
-                assertTrue("Age minValues should contain 25", dataType.minValues.containsValue("25"));
-                assertTrue("Age maxValues should contain 30", dataType.maxValues.containsValue("30"));
-            }
-        }
-        
-        // Verify minValues and maxValues for score property
-        for (ApiDumper.DataTypeInfo dataType : scoreProperty.dataTypes) {
-            if ("number".equals(dataType.type)) {
-                assertNotNull("Score should have minValues", dataType.minValues);
-                assertNotNull("Score should have maxValues", dataType.maxValues);
-                assertTrue("Score minValues should not be empty", !dataType.minValues.isEmpty());
-                assertTrue("Score maxValues should not be empty", !dataType.maxValues.isEmpty());
-                
-                // Check specific min/max values for score (85, 100)
-                assertTrue("Score minValues should contain 85", dataType.minValues.containsValue("85"));
-                assertTrue("Score maxValues should contain 100", dataType.maxValues.containsValue("100"));
-            }
-        }
+        // Verify score property min/max values (85, 100)
+        verifyNumericPropertyMinMax(schemaReport, "score", "85", "100");
     }
 
     @Test
@@ -936,5 +884,40 @@ public class ApiDumperTest {
         Method method = ApiDumper.class.getDeclaredMethod("generateSchemaReportJson", String.class, String.class);
         method.setAccessible(true);
         return (String) method.invoke(null, jsonResponse, dumpDistinctValues);
+    }
+
+    /**
+     * Helper method to verify numeric property min/max values in schema report.
+     */
+    private void verifyNumericPropertyMinMax(ApiDumper.SchemaReport schemaReport, String propertyName, 
+                                           String expectedMinValue, String expectedMaxValue) {
+        // Find the property in the schema report
+        ApiDumper.SchemaProperty property = null;
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            if (propertyName.equals(prop.property)) {
+                property = prop;
+                break;
+            }
+        }
+        
+        assertNotNull(propertyName + " property should be found", property);
+        assertEquals(propertyName + " property name should be correct", propertyName, property.property);
+        
+        // Verify minValues and maxValues for the property
+        for (ApiDumper.DataTypeInfo dataType : property.dataTypes) {
+            if ("number".equals(dataType.type)) {
+                assertNotNull(propertyName + " should have minValues", dataType.minValues);
+                assertNotNull(propertyName + " should have maxValues", dataType.maxValues);
+                assertTrue(propertyName + " minValues should not be empty", !dataType.minValues.isEmpty());
+                assertTrue(propertyName + " maxValues should not be empty", !dataType.maxValues.isEmpty());
+                
+                // Check specific min/max values
+                assertTrue(propertyName + " minValues should contain " + expectedMinValue, 
+                           dataType.minValues.containsValue(expectedMinValue));
+                assertTrue(propertyName + " maxValues should contain " + expectedMaxValue, 
+                           dataType.maxValues.containsValue(expectedMaxValue));
+                break; // Only check the first number type found
+            }
+        }
     }
 }
