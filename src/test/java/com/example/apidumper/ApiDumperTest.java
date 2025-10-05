@@ -597,19 +597,63 @@ public class ApiDumperTest {
         assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
         assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
+        // Find age and score properties in the schema report
+        ApiDumper.SchemaProperty ageProperty = null;
+        ApiDumper.SchemaProperty scoreProperty = null;
+        
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            if ("age".equals(prop.property)) {
+                ageProperty = prop;
+            } else if ("score".equals(prop.property)) {
+                scoreProperty = prop;
+            }
+        }
+        
         // Check that age property is reported
-        assertTrue("Result should contain age property", result.contains("\"property\": \"age\""));
+        assertNotNull("Age property should be found", ageProperty);
+        assertEquals("Age property name should be correct", "age", ageProperty.property);
         
         // Check that score property is reported
-        assertTrue("Result should contain score property", result.contains("\"property\": \"score\""));
-        
-        // Verify data types
-        assertTrue("Result should contain number type for age", result.contains("\"type\": \"number\""));
-        assertTrue("Result should contain number type for score", result.contains("\"type\": \"number\""));
+        assertNotNull("Score property should be found", scoreProperty);
+        assertEquals("Score property name should be correct", "score", scoreProperty.property);
         
         // Verify counts
-        assertTrue("Result should contain count for age", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for score", result.contains("\"count\": 2"));
+        assertEquals("Age count should be 2", 2, ageProperty.count);
+        assertEquals("Score count should be 2", 2, scoreProperty.count);
+        
+        // Verify data types exist and are numbers
+        assertNotNull("Age should have data types", ageProperty.dataTypes);
+        assertNotNull("Score should have data types", scoreProperty.dataTypes);
+        assertTrue("Age should have at least one data type", ageProperty.dataTypes.size() > 0);
+        assertTrue("Score should have at least one data type", scoreProperty.dataTypes.size() > 0);
+        
+        // Verify minValues and maxValues for age property
+        for (ApiDumper.DataTypeInfo dataType : ageProperty.dataTypes) {
+            if ("number".equals(dataType.type)) {
+                assertNotNull("Age should have minValues", dataType.minValues);
+                assertNotNull("Age should have maxValues", dataType.maxValues);
+                assertTrue("Age minValues should not be empty", !dataType.minValues.isEmpty());
+                assertTrue("Age maxValues should not be empty", !dataType.maxValues.isEmpty());
+                
+                // Check specific min/max values for age (25, 30)
+                assertTrue("Age minValues should contain 25", dataType.minValues.containsValue("25"));
+                assertTrue("Age maxValues should contain 30", dataType.maxValues.containsValue("30"));
+            }
+        }
+        
+        // Verify minValues and maxValues for score property
+        for (ApiDumper.DataTypeInfo dataType : scoreProperty.dataTypes) {
+            if ("number".equals(dataType.type)) {
+                assertNotNull("Score should have minValues", dataType.minValues);
+                assertNotNull("Score should have maxValues", dataType.maxValues);
+                assertTrue("Score minValues should not be empty", !dataType.minValues.isEmpty());
+                assertTrue("Score maxValues should not be empty", !dataType.maxValues.isEmpty());
+                
+                // Check specific min/max values for score (85, 100)
+                assertTrue("Score minValues should contain 85", dataType.minValues.containsValue("85"));
+                assertTrue("Score maxValues should contain 100", dataType.maxValues.containsValue("100"));
+            }
+        }
     }
 
     @Test
