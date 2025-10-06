@@ -3,6 +3,8 @@ package com.example.apidumper;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Unit test for ApiDumper.generateSchemaReportJson method.
@@ -724,28 +726,43 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that all nested properties are reported with correct paths
-        assertTrue("Result should contain users property", result.contains("\"property\": \"users\""));
-        assertTrue("Result should contain users.profile property", result.contains("\"property\": \"users.profile\""));
-        assertTrue("Result should contain users.profile.personal property", result.contains("\"property\": \"users.profile.personal\""));
-        assertTrue("Result should contain users.profile.personal.name property", result.contains("\"property\": \"users.profile.personal.name\""));
-        assertTrue("Result should contain users.profile.personal.age property", result.contains("\"property\": \"users.profile.personal.age\""));
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Do not assert schema min/max here; verified via dedicated rule tests
+        // Find all properties in the schema report
+        Map<String, ApiDumper.SchemaProperty> propertyMap = new HashMap<>();
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            propertyMap.put(prop.property, prop);
+        }
+        
+        // Check that all nested properties are reported with correct paths
+        assertTrue("Result should contain users property", propertyMap.containsKey("users"));
+        assertTrue("Result should contain users.profile property", propertyMap.containsKey("users.profile"));
+        assertTrue("Result should contain users.profile.personal property", propertyMap.containsKey("users.profile.personal"));
+        assertTrue("Result should contain users.profile.personal.name property", propertyMap.containsKey("users.profile.personal.name"));
+        assertTrue("Result should contain users.profile.personal.age property", propertyMap.containsKey("users.profile.personal.age"));
         
         // Verify data types
-        assertTrue("Result should contain array type for users", result.contains("\"type\": \"array\""));
-        assertTrue("Result should contain object type for users.profile", result.contains("\"type\": \"object\""));
-        assertTrue("Result should contain object type for users.profile.personal", result.contains("\"type\": \"object\""));
-        assertTrue("Result should contain string type for users.profile.personal.name", result.contains("\"type\": \"string\""));
-        assertTrue("Result should contain number type for users.profile.personal.age", result.contains("\"type\": \"number\""));
+        assertTrue("Result should contain array type for users", 
+                   propertyMap.get("users").dataTypes.stream().anyMatch(dt -> "array".equals(dt.type)));
+        assertTrue("Result should contain object type for users.profile", 
+                   propertyMap.get("users.profile").dataTypes.stream().anyMatch(dt -> "object".equals(dt.type)));
+        assertTrue("Result should contain object type for users.profile.personal", 
+                   propertyMap.get("users.profile.personal").dataTypes.stream().anyMatch(dt -> "object".equals(dt.type)));
+        assertTrue("Result should contain string type for users.profile.personal.name", 
+                   propertyMap.get("users.profile.personal.name").dataTypes.stream().anyMatch(dt -> "string".equals(dt.type)));
+        assertTrue("Result should contain number type for users.profile.personal.age", 
+                   propertyMap.get("users.profile.personal.age").dataTypes.stream().anyMatch(dt -> "number".equals(dt.type)));
         
         // Verify counts
-        assertTrue("Result should contain count for users", result.contains("\"count\": 1"));
-        assertTrue("Result should contain count for users.profile", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for users.profile.personal", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for users.profile.personal.name", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for users.profile.personal.age", result.contains("\"count\": 2"));
+        assertEquals("Count for users should be 1", 1, propertyMap.get("users").count);
+        assertEquals("Count for users.profile should be 2", 2, propertyMap.get("users.profile").count);
+        assertEquals("Count for users.profile.personal should be 2", 2, propertyMap.get("users.profile.personal").count);
+        assertEquals("Count for users.profile.personal.name should be 2", 2, propertyMap.get("users.profile.personal.name").count);
+        assertEquals("Count for users.profile.personal.age should be 2", 2, propertyMap.get("users.profile.personal.age").count);
     }
 
     @Test
