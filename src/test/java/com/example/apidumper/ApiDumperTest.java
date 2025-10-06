@@ -780,33 +780,50 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
+        // Find all properties in the schema report
+        Map<String, ApiDumper.SchemaProperty> propertyMap = new HashMap<>();
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            propertyMap.put(prop.property, prop);
+        }
+        
         // Check that all properties are reported, even if not present in all objects
-        assertTrue("Result should contain name property", result.contains("\"property\": \"name\""));
-        assertTrue("Result should contain age property", result.contains("\"property\": \"age\""));
-        assertTrue("Result should contain city property", result.contains("\"property\": \"city\""));
-        assertTrue("Result should contain salary property", result.contains("\"property\": \"salary\""));
-        assertTrue("Result should contain department property", result.contains("\"property\": \"department\""));
+        assertTrue("Result should contain name property", propertyMap.containsKey("name"));
+        assertTrue("Result should contain age property", propertyMap.containsKey("age"));
+        assertTrue("Result should contain city property", propertyMap.containsKey("city"));
+        assertTrue("Result should contain salary property", propertyMap.containsKey("salary"));
+        assertTrue("Result should contain department property", propertyMap.containsKey("department"));
         
         // Verify data types
-        assertTrue("Result should contain string type for name", result.contains("\"type\": \"string\""));
-        assertTrue("Result should contain number type for age", result.contains("\"type\": \"number\""));
-        assertTrue("Result should contain string type for city", result.contains("\"type\": \"string\""));
-        assertTrue("Result should contain number type for salary", result.contains("\"type\": \"number\""));
-        assertTrue("Result should contain string type for department", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain string type for name", 
+                   propertyMap.get("name").dataTypes.stream().anyMatch(dt -> "string".equals(dt.type)));
+        assertTrue("Result should contain number type for age", 
+                   propertyMap.get("age").dataTypes.stream().anyMatch(dt -> "number".equals(dt.type)));
+        assertTrue("Result should contain string type for city", 
+                   propertyMap.get("city").dataTypes.stream().anyMatch(dt -> "string".equals(dt.type)));
+        assertTrue("Result should contain number type for salary", 
+                   propertyMap.get("salary").dataTypes.stream().anyMatch(dt -> "number".equals(dt.type)));
+        assertTrue("Result should contain string type for department", 
+                   propertyMap.get("department").dataTypes.stream().anyMatch(dt -> "string".equals(dt.type)));
         
         // Verify counts - some properties appear in fewer objects
-        assertTrue("Result should contain count for name", result.contains("\"count\": 3"));
-        assertTrue("Result should contain count for age", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for city", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for salary", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for department", result.contains("\"count\": 1"));
+        assertEquals("Count for name should be 3", 3, propertyMap.get("name").count);
+        assertEquals("Count for age should be 2", 2, propertyMap.get("age").count);
+        assertEquals("Count for city should be 2", 2, propertyMap.get("city").count);
+        assertEquals("Count for salary should be 2", 2, propertyMap.get("salary").count);
+        assertEquals("Count for department should be 1", 1, propertyMap.get("department").count);
         
         // Verify distinct values
-        assertTrue("Result should contain distinctValues for name", result.contains("\"distinctValues\": 3"));
-        assertTrue("Result should contain distinctValues for age", result.contains("\"distinctValues\": 2"));
-        assertTrue("Result should contain distinctValues for city", result.contains("\"distinctValues\": 2"));
-        assertTrue("Result should contain distinctValues for salary", result.contains("\"distinctValues\": 2"));
-        assertTrue("Result should contain distinctValues for department", result.contains("\"distinctValues\": 1"));
+        assertEquals("Distinct values for name should be 3", 3, propertyMap.get("name").distinctValues);
+        assertEquals("Distinct values for age should be 2", 2, propertyMap.get("age").distinctValues);
+        assertEquals("Distinct values for city should be 2", 2, propertyMap.get("city").distinctValues);
+        assertEquals("Distinct values for salary should be 2", 2, propertyMap.get("salary").distinctValues);
+        assertEquals("Distinct values for department should be 1", 1, propertyMap.get("department").distinctValues);
     }
 
     @Test
@@ -825,25 +842,37 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
+        // Find all properties in the schema report
+        Map<String, ApiDumper.SchemaProperty> propertyMap = new HashMap<>();
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            propertyMap.put(prop.property, prop);
+        }
+        
         // Check that properties are reported
-        assertTrue("Result should contain id property", result.contains("\"property\": \"id\""));
-        assertTrue("Result should contain value property", result.contains("\"property\": \"value\""));
+        assertTrue("Result should contain id property", propertyMap.containsKey("id"));
+        assertTrue("Result should contain value property", propertyMap.containsKey("value"));
         
         // For mixed types, the implementation should handle this appropriately
         // The exact behavior may vary based on how the schema inference handles mixed types
         // This test verifies that the properties are reported and processed
-        assertTrue("Result should contain some type information for id", 
-                   result.contains("\"type\"") && result.contains("\"id\""));
-        assertTrue("Result should contain some type information for value", 
-                   result.contains("\"type\"") && result.contains("\"value\""));
+        assertNotNull("ID property should have data types", propertyMap.get("id").dataTypes);
+        assertTrue("ID property should have at least one data type", !propertyMap.get("id").dataTypes.isEmpty());
+        assertNotNull("Value property should have data types", propertyMap.get("value").dataTypes);
+        assertTrue("Value property should have at least one data type", !propertyMap.get("value").dataTypes.isEmpty());
         
         // Verify counts
-        assertTrue("Result should contain count for id", result.contains("\"count\": 4"));
-        assertTrue("Result should contain count for value", result.contains("\"count\": 4"));
+        assertEquals("Count for id should be 4", 4, propertyMap.get("id").count);
+        assertEquals("Count for value should be 4", 4, propertyMap.get("value").count);
         
         // Verify distinct values
-        assertTrue("Result should contain distinctValues for id", result.contains("\"distinctValues\": 4"));
-        assertTrue("Result should contain distinctValues for value", result.contains("\"distinctValues\": 4"));
+        assertEquals("Distinct values for id should be 4", 4, propertyMap.get("id").distinctValues);
+        assertEquals("Distinct values for value should be 4", 4, propertyMap.get("value").distinctValues);
     }
 
     @Test
@@ -863,22 +892,36 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
+        // Find all properties in the schema report
+        Map<String, ApiDumper.SchemaProperty> propertyMap = new HashMap<>();
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            propertyMap.put(prop.property, prop);
+        }
+        
         // Check that properties are reported
-        assertTrue("Result should contain status property", result.contains("\"property\": \"status\""));
-        assertTrue("Result should contain priority property", result.contains("\"property\": \"priority\""));
+        assertTrue("Result should contain status property", propertyMap.containsKey("status"));
+        assertTrue("Result should contain priority property", propertyMap.containsKey("priority"));
         
         // Verify data types
-        assertTrue("Result should contain string type for status", result.contains("\"type\": \"string\""));
-        assertTrue("Result should contain string type for priority", result.contains("\"type\": \"string\""));
+        assertTrue("Result should contain string type for status", 
+                   propertyMap.get("status").dataTypes.stream().anyMatch(dt -> "string".equals(dt.type)));
+        assertTrue("Result should contain string type for priority", 
+                   propertyMap.get("priority").dataTypes.stream().anyMatch(dt -> "string".equals(dt.type)));
         
         // Verify counts
-        assertTrue("Result should contain count for status", result.contains("\"count\": 5"));
-        assertTrue("Result should contain count for priority", result.contains("\"count\": 5"));
+        assertEquals("Count for status should be 5", 5, propertyMap.get("status").count);
+        assertEquals("Count for priority should be 5", 5, propertyMap.get("priority").count);
         
         // Verify distinct values - status has 3 distinct values (active, inactive, pending)
         // priority has 3 distinct values (high, low, medium)
-        assertTrue("Result should contain distinctValues for status", result.contains("\"distinctValues\": 3"));
-        assertTrue("Result should contain distinctValues for priority", result.contains("\"distinctValues\": 3"));
+        assertEquals("Distinct values for status should be 3", 3, propertyMap.get("status").distinctValues);
+        assertEquals("Distinct values for priority should be 3", 3, propertyMap.get("priority").distinctValues);
         
         // Do not assert schema min/max here; distinct values and counts are already verified
     }
