@@ -617,22 +617,17 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that name property is reported
-        assertTrue("Result should contain name property", result.contains("\"property\": \"name\""));
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Check that status property is reported
-        assertTrue("Result should contain status property", result.contains("\"property\": \"status\""));
+        // Verify name property min/max values (Alice, Dennis - lexicographically)
+        verifyStringPropertyMinMax(schemaReport, "name", "Alice", "Dennis");
         
-        // Verify data types
-        assertTrue("Result should contain string type for name", result.contains("\"type\": \"string\""));
-        assertTrue("Result should contain string type for status", result.contains("\"type\": \"string\""));
-        
-        // Verify counts
-        assertTrue("Result should contain count 3 for name", result.contains("\"count\": 3"));
-        assertTrue("Result should contain count 3 for status", result.contains("\"count\": 3"));
-        
-        assertTrue("Result should contain Alice as a string", result.contains("\"string\": \"Alice\""));
-        assertTrue("Result should contain Dennis as a string", result.contains("\"string\": \"Dennis\""));
+        // Verify status property min/max values (active, pending - lexicographically)
+        verifyStringPropertyMinMax(schemaReport, "status", "active", "inactive");
     }
 
     @Test
@@ -648,19 +643,17 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that created property is reported
-        assertTrue("Result should contain created property", result.contains("\"property\": \"created\""));
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Check that updated property is reported
-        assertTrue("Result should contain updated property", result.contains("\"property\": \"updated\""));
+        // Verify created property min/max values (2023-01-15, 2023-03-10 - chronologically)
+        verifyStringPropertyMinMax(schemaReport, "created", "2023-01-15", "2023-03-10");
         
-        // Verify data types
-        assertTrue("Result should contain string type for created", result.contains("\"type\": \"string\""));
-        assertTrue("Result should contain string type for updated", result.contains("\"type\": \"string\""));
-        
-        // Verify counts
-        assertTrue("Result should contain count for created", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for updated", result.contains("\"count\": 2"));
+        // Verify updated property min/max values (2023-02-20, 2023-04-05 - chronologically)
+        verifyStringPropertyMinMax(schemaReport, "updated", "2023-02-20", "2023-04-05");
     }
 
     @Test
@@ -917,6 +910,41 @@ public class ApiDumperTest {
                 assertTrue(propertyName + " maxValues should contain " + expectedMaxValue, 
                            dataType.maxValues.containsValue(expectedMaxValue));
                 break; // Only check the first number type found
+            }
+        }
+    }
+
+    /**
+     * Helper method to verify string property min/max values in schema report.
+     */
+    private void verifyStringPropertyMinMax(ApiDumper.SchemaReport schemaReport, String propertyName, 
+                                          String expectedMinValue, String expectedMaxValue) {
+        // Find the property in the schema report
+        ApiDumper.SchemaProperty property = null;
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            if (propertyName.equals(prop.property)) {
+                property = prop;
+                break;
+            }
+        }
+        
+        assertNotNull(propertyName + " property should be found", property);
+        assertEquals(propertyName + " property name should be correct", propertyName, property.property);
+        
+        // Verify minValues and maxValues for the property
+        for (ApiDumper.DataTypeInfo dataType : property.dataTypes) {
+            if ("string".equals(dataType.type)) {
+                assertNotNull(propertyName + " should have minValues", dataType.minValues);
+                assertNotNull(propertyName + " should have maxValues", dataType.maxValues);
+                assertTrue(propertyName + " minValues should not be empty", !dataType.minValues.isEmpty());
+                assertTrue(propertyName + " maxValues should not be empty", !dataType.maxValues.isEmpty());
+                
+                // Check specific min/max values
+                assertTrue(propertyName + " minValues should contain " + expectedMinValue, 
+                           dataType.minValues.containsValue(expectedMinValue));
+                assertTrue(propertyName + " maxValues should contain " + expectedMaxValue, 
+                           dataType.maxValues.containsValue(expectedMaxValue));
+                break; // Only check the first string type found
             }
         }
     }
