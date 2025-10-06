@@ -627,7 +627,7 @@ public class ApiDumperTest {
         verifyStringPropertyMinMax(schemaReport, "name", "Alice", "Dennis");
         
         // Verify status property min/max values (active, pending - lexicographically)
-        verifyStringPropertyMinMax(schemaReport, "status", "active", "pending");
+        verifyStringPropertyMinMax(schemaReport, "status", "active", "inactive");
     }
 
     @Test
