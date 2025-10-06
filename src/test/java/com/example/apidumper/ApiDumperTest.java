@@ -669,20 +669,17 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that price property is reported
-        assertTrue("Result should contain price property", result.contains("\"property\": \"price\""));
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Check that rating property is reported
-        assertTrue("Result should contain rating property", result.contains("\"property\": \"rating\""));
+        // Verify price property min/max values (19.99, 29.99)
+        verifyNumericPropertyMinMax(schemaReport, "price", "19.99", "29.99");
         
-        // Verify data types
-        assertTrue("Result should contain number type for price", result.contains("\"type\": \"number\""));
-        assertTrue("Result should contain number type for rating", result.contains("\"type\": \"number\""));
-        
-        // Verify counts
-        assertTrue("Result should contain count for price", result.contains("\"count\": 2"));
-        assertTrue("Result should contain count for rating", result.contains("\"count\": 2"));
-
+        // Verify rating property min/max values (3.8, 4.5)
+        verifyNumericPropertyMinMax(schemaReport, "rating", "3.8", "4.5");
     }
 
     @Test
@@ -699,19 +696,18 @@ public class ApiDumperTest {
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
-        // Check that value property is reported (mixed types supported)
-        assertTrue("Result should contain value property", result.contains("\"property\": \"value\""));
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Check that type property is reported
-        assertTrue("Result should contain type property", result.contains("\"property\": \"type\""));
+        // Verify value property min/max values for numeric portion (10, 25.5)
+        // Note: This property has mixed types, but we verify the numeric min/max values
+        verifyNumericPropertyMinMax(schemaReport, "value", "10", "25.5");
         
-        // Verify data types
-        assertTrue("Result should contain string type for type", result.contains("\"type\": \"string\""));
-        
-        // Verify counts
-        assertTrue("Result should contain count for value", result.contains("\"count\": 4"));
-        assertTrue("Result should contain count for type", result.contains("\"count\": 4"));
-
+        // Verify type property min/max values for string portion (boolean, string - lexicographically)
+        verifyStringPropertyMinMax(schemaReport, "type", "boolean", "string");
     }
 
     @Test
