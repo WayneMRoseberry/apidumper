@@ -823,31 +823,9 @@ public class ApiDumperTest {
         assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
         assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Find all properties in the schema report
-        Map<String, ApiDumper.SchemaProperty> propertyMap = new HashMap<>();
-        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
-            propertyMap.put(prop.property, prop);
-        }
-        
-        // Check that properties are reported
-        assertTrue("Result should contain id property", propertyMap.containsKey("id"));
-        assertTrue("Result should contain value property", propertyMap.containsKey("value"));
-        
-        // For mixed types, the implementation should handle this appropriately
-        // The exact behavior may vary based on how the schema inference handles mixed types
-        // This test verifies that the properties are reported and processed
-        assertNotNull("ID property should have data types", propertyMap.get("id").dataTypes);
-        assertTrue("ID property should have at least one data type", !propertyMap.get("id").dataTypes.isEmpty());
-        assertNotNull("Value property should have data types", propertyMap.get("value").dataTypes);
-        assertTrue("Value property should have at least one data type", !propertyMap.get("value").dataTypes.isEmpty());
-        
-        // Verify counts
-        assertEquals("Count for id should be 4", 4, propertyMap.get("id").count);
-        assertEquals("Count for value should be 4", 4, propertyMap.get("value").count);
-        
-        // Verify distinct values
-        assertEquals("Distinct values for id should be 4", 4, propertyMap.get("id").distinctValues);
-        assertEquals("Distinct values for value should be 4", 4, propertyMap.get("value").distinctValues);
+        // Verify properties with mixed types using helper function
+        verifySchemaPropertyWithMixedTypes(schemaReport, "id", new String[]{"string", "number"}, 4, 4);
+        verifySchemaPropertyWithMixedTypes(schemaReport, "value", new String[]{"string", "number"}, 4, 4);
     }
 
     @Test
@@ -1003,5 +981,35 @@ public class ApiDumperTest {
         
         // Verify count
         assertEquals(propertyName + " should have expected count", expectedCount, property.count);
+    }
+
+    /**
+     * Helper method to verify a property exists in schema report and has expected values with mixed types.
+     */
+    private void verifySchemaPropertyWithMixedTypes(ApiDumper.SchemaReport schemaReport, String propertyName, 
+                                                   String[] expectedDataTypes, int expectedCount, int expectedDistinctValues) {
+        // Find the property in the schema report
+        ApiDumper.SchemaProperty property = null;
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            if (propertyName.equals(prop.property)) {
+                property = prop;
+                break;
+            }
+        }
+        
+        assertNotNull(propertyName + " property should be found", property);
+        assertEquals(propertyName + " property name should be correct", propertyName, property.property);
+        
+        // Verify data types (should have all expected types)
+        for (String expectedType : expectedDataTypes) {
+            assertTrue(propertyName + " should have expected data type " + expectedType, 
+                       property.dataTypes.stream().anyMatch(dt -> expectedType.equals(dt.type)));
+        }
+        
+        // Verify count
+        assertEquals(propertyName + " should have expected count", expectedCount, property.count);
+        
+        // Verify distinct values
+        assertEquals(propertyName + " should have expected distinct values", expectedDistinctValues, property.distinctValues);
     }
 }
