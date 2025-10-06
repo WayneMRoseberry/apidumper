@@ -24,18 +24,17 @@ public class ApiDumperTest {
         // Assert
         assertNotNull("Result should not be null", result);
         assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
-        assertTrue("Result should contain name property", result.contains("\"property\": \"name\""));
-        assertTrue("Result should contain age property", result.contains("\"property\": \"age\""));
-        assertTrue("Result should contain active property", result.contains("\"property\": \"active\""));
         
-        // Verify data types
-        assertTrue("Result should contain string type for name", result.contains("\"type\": \"string\""));
-        assertTrue("Result should contain number type for age", result.contains("\"type\": \"number\""));
-        assertTrue("Result should contain boolean type for active", result.contains("\"type\": \"boolean\""));
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Verify counts
-        assertTrue("Result should contain count for name", result.contains("\"count\": 1"));
-        assertTrue("Result should contain distinctValues", result.contains("\"distinctValues\": 1"));
+        // Verify all properties using helper function
+        verifySchemaProperty(schemaReport, "name", "string", 1);
+        verifySchemaProperty(schemaReport, "age", "number", 1);
+        verifySchemaProperty(schemaReport, "active", "boolean", 1);
     }
 
     @Test
@@ -49,9 +48,20 @@ public class ApiDumperTest {
         
         // Assert
         assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         assertTrue("Result should contain distinctValuesArray for status", 
                    result.contains("\"distinctValuesArray\""));
         assertTrue("Result should contain active value", result.contains("\"active\""));
+        
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
+        // Verify properties using helper function
+        verifySchemaProperty(schemaReport, "status", "string", 1);
+        verifySchemaProperty(schemaReport, "count", "number", 1);
     }
 
     @Test
@@ -65,12 +75,20 @@ public class ApiDumperTest {
         
         // Assert
         assertNotNull("Result should not be null", result);
-        assertTrue("Result should contain nested properties", 
-                   result.contains("\"property\": \"user.name\""));
-        assertTrue("Result should contain nested age property", 
-                   result.contains("\"property\": \"user.age\""));
-        assertTrue("Result should contain nested settings property", 
-                   result.contains("\"property\": \"settings.theme\""));
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
+        // Verify all nested properties using helper function
+        verifySchemaProperty(schemaReport, "user", "object", 1);
+        verifySchemaProperty(schemaReport, "user.name", "string", 1);
+        verifySchemaProperty(schemaReport, "user.age", "number", 1);
+        verifySchemaProperty(schemaReport, "settings", "object", 1);
+        verifySchemaProperty(schemaReport, "settings.theme", "string", 1);
     }
 
     @Test
@@ -84,10 +102,17 @@ public class ApiDumperTest {
         
         // Assert
         assertNotNull("Result should not be null", result);
-        assertTrue("Result should contain array type for items", 
-                   result.contains("\"property\": \"items\"") && result.contains("\"type\": \"array\""));
-        assertTrue("Result should contain array type for counts", 
-                   result.contains("\"property\": \"counts\"") && result.contains("\"type\": \"array\""));
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
+        
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
+        // Verify array properties using helper function
+        verifySchemaProperty(schemaReport, "items", "array", 1);
+        verifySchemaProperty(schemaReport, "counts", "array", 1);
     }
 
     @Test
@@ -141,14 +166,23 @@ public class ApiDumperTest {
         
         // Assert
         assertNotNull("Result should not be null", result);
-        assertTrue("Result should contain nested array properties", 
-                   result.contains("\"property\": \"users.name\""));
-        assertTrue("Result should contain nested array age properties", 
-                   result.contains("\"property\": \"users.age\""));
-        assertTrue("Result should contain metadata properties", 
-                   result.contains("\"property\": \"metadata.total\""));
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         assertTrue("Result should contain distinctValuesArray for users.name", 
                    result.contains("\"distinctValuesArray\""));
+        
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+        
+        // Verify all properties using helper function
+        verifySchemaProperty(schemaReport, "users", "array", 1);
+        verifySchemaProperty(schemaReport, "users.name", "string", 2);
+        verifySchemaProperty(schemaReport, "users.age", "number", 2);
+        verifySchemaProperty(schemaReport, "metadata", "object", 1);
+        verifySchemaProperty(schemaReport, "metadata.total", "number", 1);
+        verifySchemaProperty(schemaReport, "metadata.page", "number", 1);
     }
 
     @Test
@@ -162,27 +196,26 @@ public class ApiDumperTest {
         
         // Assert
         assertNotNull("Result should not be null", result);
+        assertTrue("Result should contain schemaReport", result.contains("\"schemaReport\""));
         
         // Check that the schema report contains distinct values information
         assertTrue("Result should contain distinctValuesArray", 
                    result.contains("\"distinctValuesArray\""));
         
-        // Check that both distinct values are present in the response
+        // Check that distinct values are present in the response
         assertTrue("Result should contain 'active' value", result.contains("\"active\""));
         assertTrue("Result should contain 'inactive' value", result.contains("\"inactive\""));
         assertTrue("Result should contain 'pending' value", result.contains("\"pending\""));
         
-        // Check that distinctValues count is correct (should be 3)
-        assertTrue("Result should contain distinctValues count of 3", 
-                   result.contains("\"distinctValues\": 3"));
+        // Verify the result can be deserialized into a valid SchemaReport object
+        com.google.gson.Gson gson = new com.google.gson.Gson();
+        ApiDumper.SchemaReport schemaReport = gson.fromJson(result, ApiDumper.SchemaReport.class);
+        assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+        assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Verify the property structure
-        assertTrue("Result should contain status property", 
-                   result.contains("\"property\": \"status\""));
-        
-        // Verify that the distinctValuesArray is a proper JSON array with all three values
-        assertTrue("distinctValuesArray should contain all three values", 
-                   result.contains("\"active\"") && result.contains("\"inactive\"") && result.contains("\"pending\""));
+        // Verify properties using helper function
+        verifySchemaProperty(schemaReport, "status", "string", 3);
+        verifySchemaProperty(schemaReport, "count", "number", 3);
     }
 
     @Test
