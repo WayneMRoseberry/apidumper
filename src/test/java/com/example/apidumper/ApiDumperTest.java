@@ -732,37 +732,12 @@ public class ApiDumperTest {
         assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
         assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
         
-        // Find all properties in the schema report
-        Map<String, ApiDumper.SchemaProperty> propertyMap = new HashMap<>();
-        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
-            propertyMap.put(prop.property, prop);
-        }
-        
-        // Check that all nested properties are reported with correct paths
-        assertTrue("Result should contain users property", propertyMap.containsKey("users"));
-        assertTrue("Result should contain users.profile property", propertyMap.containsKey("users.profile"));
-        assertTrue("Result should contain users.profile.personal property", propertyMap.containsKey("users.profile.personal"));
-        assertTrue("Result should contain users.profile.personal.name property", propertyMap.containsKey("users.profile.personal.name"));
-        assertTrue("Result should contain users.profile.personal.age property", propertyMap.containsKey("users.profile.personal.age"));
-        
-        // Verify data types
-        assertTrue("Result should contain array type for users", 
-                   propertyMap.get("users").dataTypes.stream().anyMatch(dt -> "array".equals(dt.type)));
-        assertTrue("Result should contain object type for users.profile", 
-                   propertyMap.get("users.profile").dataTypes.stream().anyMatch(dt -> "object".equals(dt.type)));
-        assertTrue("Result should contain object type for users.profile.personal", 
-                   propertyMap.get("users.profile.personal").dataTypes.stream().anyMatch(dt -> "object".equals(dt.type)));
-        assertTrue("Result should contain string type for users.profile.personal.name", 
-                   propertyMap.get("users.profile.personal.name").dataTypes.stream().anyMatch(dt -> "string".equals(dt.type)));
-        assertTrue("Result should contain number type for users.profile.personal.age", 
-                   propertyMap.get("users.profile.personal.age").dataTypes.stream().anyMatch(dt -> "number".equals(dt.type)));
-        
-        // Verify counts
-        assertEquals("Count for users should be 1", 1, propertyMap.get("users").count);
-        assertEquals("Count for users.profile should be 2", 2, propertyMap.get("users.profile").count);
-        assertEquals("Count for users.profile.personal should be 2", 2, propertyMap.get("users.profile.personal").count);
-        assertEquals("Count for users.profile.personal.name should be 2", 2, propertyMap.get("users.profile.personal.name").count);
-        assertEquals("Count for users.profile.personal.age should be 2", 2, propertyMap.get("users.profile.personal.age").count);
+        // Verify all nested properties using helper function
+        verifySchemaProperty(schemaReport, "users", "array", 1);
+        verifySchemaProperty(schemaReport, "users.profile", "object", 2);
+        verifySchemaProperty(schemaReport, "users.profile.personal", "object", 2);
+        verifySchemaProperty(schemaReport, "users.profile.personal.name", "string", 2);
+        verifySchemaProperty(schemaReport, "users.profile.personal.age", "number", 2);
     }
 
     @Test
@@ -1003,5 +978,30 @@ public class ApiDumperTest {
                 break; // Only check the first string type found
             }
         }
+    }
+
+    /**
+     * Helper method to verify a property exists in schema report and has expected values.
+     */
+    private void verifySchemaProperty(ApiDumper.SchemaReport schemaReport, String propertyName, 
+                                     String expectedDataType, int expectedCount) {
+        // Find the property in the schema report
+        ApiDumper.SchemaProperty property = null;
+        for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+            if (propertyName.equals(prop.property)) {
+                property = prop;
+                break;
+            }
+        }
+        
+        assertNotNull(propertyName + " property should be found", property);
+        assertEquals(propertyName + " property name should be correct", propertyName, property.property);
+        
+        // Verify data type
+        assertTrue(propertyName + " should have expected data type " + expectedDataType, 
+                   property.dataTypes.stream().anyMatch(dt -> expectedDataType.equals(dt.type)));
+        
+        // Verify count
+        assertEquals(propertyName + " should have expected count", expectedCount, property.count);
     }
 }
