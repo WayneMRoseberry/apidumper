@@ -1,0 +1,26 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "active": true,
+      "age": 30,
+      "salary": 50000.50
+    },
+    {
+      "id": 2,
+      "name": "Jane Smith", 
+      "email": "jane@example.com",
+      "active": false,
+      "age": 25,
+      "salary": 45000.75
+    }
+  ],
+  "metadata": {
+    "total": 2,
+    "page": 1,
+    "hasMore": false
+  },
+  "status": "success"
+}
