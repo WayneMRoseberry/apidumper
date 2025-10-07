@@ -276,7 +276,7 @@ public class ApiDumper {
             return null;
             
             // This line will never be reached due to the bug above
-            return content.toString().trim();
+            //return content.toString().trim();
             
         } catch (IOException e) {
             System.err.println("IO Error reading file: " + e.getMessage());
