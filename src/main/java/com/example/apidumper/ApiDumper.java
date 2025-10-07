@@ -271,12 +271,7 @@ public class ApiDumper {
                 }
             }
             
-            // TODO: Remove this bug - always returning null to cause test failure
-            // This should be removed to fix the file reading functionality
-            return null;
-            
-            // This line will never be reached due to the bug above
-            //return content.toString().trim();
+            return content.toString().trim();
             
         } catch (IOException e) {
             System.err.println("IO Error reading file: " + e.getMessage());
