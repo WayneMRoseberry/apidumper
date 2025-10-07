@@ -991,6 +991,113 @@ public class ApiDumperTest {
         }
     }
 
+    @Test
+    public void testProcessJsonFile_generatesSchemaReport() throws Exception {
+        // Arrange
+        String testJsonFile = "src/test/resources/test-file.json";
+        String dumpDistinctValues = "name,status";
+        
+        // Create a temporary file for the schema report output
+        java.io.File tempReportFile = java.io.File.createTempFile("schema-report", ".json");
+        tempReportFile.deleteOnExit();
+        String reportFilePath = tempReportFile.getAbsolutePath();
+        
+        try {
+            // Act - Use reflection to call the private processJsonFile method
+            Method processJsonFileMethod = ApiDumper.class.getDeclaredMethod("processJsonFile", 
+                String.class, boolean.class, boolean.class, String.class, String.class);
+            processJsonFileMethod.setAccessible(true);
+            
+            // Capture output
+            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+            java.io.PrintStream originalOut = System.out;
+            System.setOut(new java.io.PrintStream(outputStream));
+            
+            try {
+                // Call processJsonFile with schema report generation enabled
+                processJsonFileMethod.invoke(null, testJsonFile, true, true, dumpDistinctValues, reportFilePath);
+                String output = outputStream.toString();
+                
+                // Assert
+                assertTrue("Output should contain file reading message", 
+                           output.contains("Reading JSON from file: " + testJsonFile));
+                
+                // Verify that the schema report file was created and contains expected content
+                assertTrue("Schema report file should exist", tempReportFile.exists());
+                assertTrue("Schema report file should not be empty", tempReportFile.length() > 0);
+                
+                // Read and verify the schema report content
+                String schemaReportContent = readFileContent(tempReportFile);
+                assertNotNull("Schema report content should not be null", schemaReportContent);
+                assertTrue("Schema report should contain schemaReport field", 
+                           schemaReportContent.contains("\"schemaReport\""));
+                
+                // Verify the schema report can be deserialized
+                com.google.gson.Gson gson = new com.google.gson.Gson();
+                ApiDumper.SchemaReport schemaReport = gson.fromJson(schemaReportContent, ApiDumper.SchemaReport.class);
+                assertNotNull("SchemaReport should be successfully deserialized", schemaReport);
+                assertNotNull("SchemaReport schemaReport should not be null", schemaReport.schemaReport);
+                
+                // Verify expected properties are present
+                Map<String, ApiDumper.SchemaProperty> propertyMap = new HashMap<>();
+                for (ApiDumper.SchemaProperty prop : schemaReport.schemaReport) {
+                    propertyMap.put(prop.property, prop);
+                }
+                
+                // Check for key properties from the test JSON
+                assertTrue("Should contain users property", propertyMap.containsKey("users"));
+                assertTrue("Should contain users.id property", propertyMap.containsKey("users.id"));
+                assertTrue("Should contain users.name property", propertyMap.containsKey("users.name"));
+                assertTrue("Should contain users.email property", propertyMap.containsKey("users.email"));
+                assertTrue("Should contain users.active property", propertyMap.containsKey("users.active"));
+                assertTrue("Should contain users.age property", propertyMap.containsKey("users.age"));
+                assertTrue("Should contain users.salary property", propertyMap.containsKey("users.salary"));
+                assertTrue("Should contain metadata property", propertyMap.containsKey("metadata"));
+                assertTrue("Should contain metadata.total property", propertyMap.containsKey("metadata.total"));
+                assertTrue("Should contain metadata.page property", propertyMap.containsKey("metadata.page"));
+                assertTrue("Should contain metadata.hasMore property", propertyMap.containsKey("metadata.hasMore"));
+                assertTrue("Should contain status property", propertyMap.containsKey("status"));
+                
+                // Verify data types
+                verifySchemaProperty(schemaReport, "users", "array", 1);
+                verifySchemaProperty(schemaReport, "users.id", "number", 2);
+                verifySchemaProperty(schemaReport, "users.name", "string", 2);
+                verifySchemaProperty(schemaReport, "users.email", "string", 2);
+                verifySchemaProperty(schemaReport, "users.active", "boolean", 2);
+                verifySchemaProperty(schemaReport, "users.age", "number", 2);
+                verifySchemaProperty(schemaReport, "users.salary", "number", 2);
+                verifySchemaProperty(schemaReport, "metadata", "object", 1);
+                verifySchemaProperty(schemaReport, "metadata.total", "number", 1);
+                verifySchemaProperty(schemaReport, "metadata.page", "number", 1);
+                verifySchemaProperty(schemaReport, "metadata.hasMore", "boolean", 1);
+                verifySchemaProperty(schemaReport, "status", "string", 1);
+                
+            } finally {
+                System.setOut(originalOut);
+            }
+            
+        } finally {
+            // Clean up
+            if (tempReportFile.exists()) {
+                tempReportFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Helper method to read file content as string.
+     */
+    private String readFileContent(java.io.File file) throws Exception {
+        StringBuilder content = new StringBuilder();
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+        }
+        return content.toString().trim();
+    }
+
     /**
      * Helper method to verify a property exists in schema report and has expected values.
      */
